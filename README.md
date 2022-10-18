@@ -7,6 +7,13 @@ Download tool for AnVIL/TDR data identified by DRS URIs and Google
 
 ## Installation
 
+    While developing:
+        * navigate to the project home directory. 
+        * `pip install -e .` will install the package and keep it updated without having to re-install. 
+    
+
+### Development
+
 ## Usage
 
 ## Credits
