@@ -35,7 +35,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='drs_downloader',  # Required
+    name='tdu',  # Required
 
     # Versions should comply with PEP 440:
     # https://packaging.python.org/en/latest/single_source_version.html
@@ -119,7 +119,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'drs_download = drs_downloader.cli:cli'
+            'tdu = drs_downloader.cli:cli'
         ],
     },
 
