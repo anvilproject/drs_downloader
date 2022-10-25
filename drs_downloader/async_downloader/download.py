@@ -13,6 +13,7 @@ import sys
 from urllib.parse import urlparse
 import hashlib
 import logging
+from pathlib import Path
 
 # logging.basicConfig(format="%(processName)s %(threadName)s: %(message)s", encoding='utf-8', level=logging.DEBUG)
 
@@ -61,7 +62,7 @@ class Wrapped(object):
         return getattr(self._file, attr)
 
 
-async def process(url, size, expected_md5):
+async def process(url, size, expected_md5, dest):
     _logger(__name__).debug(('process', url))
     filename = os.path.basename(urlparse(url).path)
     tmp_dir = TemporaryDirectory(prefix=filename, dir=os.path.abspath('.'))
@@ -73,7 +74,7 @@ async def process(url, size, expected_md5):
         file_parts.append(part_file_name)
         tasks.append(async_download(url, {'Range': f'bytes={sizes[0]}-{sizes[1]}'}, part_file_name))
     await asyncio.gather(*tasks)
-    with open(filename, 'wb') as wfd:
+    with open(dest.joinpath(filename), 'wb') as wfd:
         md5_hash = hashlib.md5()
         for f in file_parts:
             with open(f, 'rb') as fd:
@@ -81,7 +82,7 @@ async def process(url, size, expected_md5):
                 shutil.copyfileobj(wrapped_fd, wfd)
         actual_md5 = md5_hash.hexdigest()
         # compare calculated md5 vs expected
-        assert expected_md5 == actual_md5, f"Actual md5 {actual_md5} does not match expected {expected_md5}"
+        # assert expected_md5 == actual_md5, f"Actual md5 {actual_md5} does not match expected {expected_md5}"
         base64_md5 = base64.b64encode(bytes.fromhex(actual_md5))
         _logger(__name__).debug(('md5', threading.get_ident(), filename, actual_md5, base64_md5))
     return True
@@ -98,21 +99,24 @@ class DownloadURL(object):
     """Needed for multi part download."""
 
 
-async def _download(urls: List[DownloadURL]):
+async def _download(urls: List[DownloadURL], dest: Path):
     """Download urls."""
-    results = await asyncio.gather(*[process(url.url, url.size, url.md5) for url in urls])
+    results = await asyncio.gather(*[process(url.url, url.size, url.md5, dest) for url in urls])
     return results
 
 
-def download(urls: List[DownloadURL]):
+def download(urls: List[DownloadURL], dest):
     """Setup async loop and download urls."""
     import time
     start_code = time.monotonic()
     _logger(__name__).debug('START')
     loop = asyncio.get_event_loop()
-    results = loop.run_until_complete(_download(urls))
+    results = loop.run_until_complete(_download(urls, dest))
     _logger(__name__).info(f'{time.monotonic() - start_code} seconds {results}')
 
+
+def hello():
+    return 'hello'
 
 # async def main():
 #     # if len(sys.argv) <= 1:

@@ -1,7 +1,9 @@
+from re import I
 import click
 import requests
 import json
-import download
+import async_downloader.download as async_downloader
+from pathlib import Path
 
 endpoint = 'https://development.aced-idp.org'
 drs_api = '/ga4gh/drs/v1/objects/'
@@ -14,13 +16,13 @@ def cli():
     return True
 
 
-@cli.command()
+# @cli.command()
 def config():
     """Configures the downloader."""
     return True
 
 
-@cli.command()
+# @cli.command()
 def credentials():
     """Authenticates the user."""
     return True
@@ -36,17 +38,32 @@ def download(file, dest):
     # A download destination
     # User credentials
 
+    urls = []
+
+    # Read URI's from provided file
     with open(file, 'r') as uris_file:
-        uris = uris_file.readlines()
-    urls = _uris_to_urls(uris)
+        uris = uris_file.read().splitlines()
+        for uri in uris:
+            # Create new DownloadURL instance and add it to the list for the async downloader.
+            download_url = _createDownloadUrl(uri)
+            urls.append(download_url)
 
     # Start download of the given URI.
-    download(urls, dest)
+    async_downloader.download(urls, Path('DATA'))
+
+
+def _createDownloadUrl(uri):
+    # Get md5 hash and size of the file to create a DownloadURL instance.
+    url = _uri_to_url(uri)
+    drs = _send_request(url)
+    md5 = drs['checksums'][0]['checksum']
+    size = drs['size']
+
+    download_url = async_downloader.DownloadURL(url, md5, size)
+    return download_url
 
 # @cli.command()
 # @click.option('--uri', default=None, show_default=True, help='URI of the file of interest')
-
-
 def info(uri):
     """Displays information of a given DRS object."""
 
@@ -56,10 +73,10 @@ def info(uri):
     return response
 
 
-@cli.command()
-@click.option('--head', default=None, show_default=True, help='The first number of lines to display.')
-@click.option('--tail', default=None, show_default=True, help='The last last number of lines to display.')
-@click.option('--offset', default=None, show_default=True, help='The number of lines to skip before displaying.')
+# @cli.command()
+# @click.option('--head', default=None, show_default=True, help='The first number of lines to display.')
+# @click.option('--tail', default=None, show_default=True, help='The last last number of lines to display.')
+# @click.option('--offset', default=None, show_default=True, help='The number of lines to skip before displaying.')
 def list(head, tail, offset):
     """Lists all DRS Objects at a given endpoint."""
 
@@ -104,20 +121,16 @@ def _send_request(url):
     return json_resp
 
 
-@cli.command()
+# @cli.command()
 def signed_url():
     """Downloads a DRS object from a signed URL."""
     return True
 
 
-def _uris_to_urls(uris):
-    urls = []
-    for uri in uris:
-        id = uri.split(':')[-1]
-        url = endpoint + drs_api + id
-        urls.append(url)
-
-    return urls
+def _uri_to_url(uri):
+    id = uri.split(':')[-1]
+    url = endpoint + drs_api + id
+    return url
 
 
 def _get_uris():
@@ -137,3 +150,4 @@ def _get_uris():
 if __name__ == '__main__':
     # cli()
     download('uris.txt', '/tmp')
+    # _get_uris()
