@@ -35,13 +35,15 @@ def download(file, dest):
     # A Google project to be billed for the download costs
     # A download destination
     # User credentials
+    try:
+        with open(file, 'r') as uris_file:
+            uris = uris_file.readlines()
+        urls = _uris_to_urls(uris)
 
-    with open(file, 'r') as uris_file:
-        uris = uris_file.readlines()
-    urls = _uris_to_urls(uris)
-
-    # Start download of the given URI.
-    download(urls, dest)
+        # Start download of the given URI.
+        download(urls, dest)
+    except Exception:
+        print("exception has occrued in download function")
 
 # @cli.command()
 # @click.option('--uri', default=None, show_default=True, help='URI of the file of interest')
@@ -51,57 +53,72 @@ def info(uri):
     """Displays information of a given DRS object."""
 
     # Send request to endpoint with the DRS object URI provided by the user.
+    assert(uri,endpoint,drs_api)
     url = endpoint + drs_api + uri
-    response = _send_request(url)
-    return response
+    try:
+        response = _send_request(url)
+        return response
+
+    except Exception:
+        print("response call to _send_request(url) has failed in info function")
+
 
 
 @cli.command()
 @click.option('--head', default=None, show_default=True, help='The first number of lines to display.')
 @click.option('--tail', default=None, show_default=True, help='The last last number of lines to display.')
-@click.option('--offset', default=None, show_default=True, help='The number of lines to skip before displaying.')
-def list(head, tail, offset):
+def list(head, tail):
+
     """Lists all DRS Objects at a given endpoint."""
+    try:
+        url = endpoint + drs_api
+        response = _send_request(url)
+        drs_objects = response['drs_objects']
+        ids = []
+        for drs_object in drs_objects:
+            id = drs_object['id']
+            ids.append(id)
+        
+        if (head == None and tail == None):
+            print(ids)
+            return
+    except Exception:
+        print("List function Drs_objects Exceptions has occured")
+    
 
-    url = endpoint + drs_api
-    response = _send_request(url)
-    drs_objects = response['drs_objects']
-    ids = []
-    for drs_object in drs_objects:
-        if drs_object.index(drs_object) > head:
-            break
 
-        id = drs_object['id']
-        ids.append(id)
+    if ( (head != None  and type(head != int)) or (tail != None and type(tail) != int)):
+        print("Please only enter numbers for head and tail and only strings of format 'int int' for indices")
+        raise Exception
 
-    if (head == None and tail == None and offset == None):
-        return
-
-    if (type(head) != (None or int) or type(tail) != (None or int) or type(offset) != (None or int)):
-        print("Please only enter numbers")
-        return
-    if ((head != None and tail != None) or (head != None and tail != None and offset != None) or (offset != None and tail != None) or (offset != None and head != None)):
-        print("cannot handle that option, try only head or only tail flags or only offset flags, but no combination of both please")
-        return
-    if (head != None and head > len(data)) or (tail != None and tail > len(data)) or (offset != None and offset > len(data)):
-        print("head, tail or offset value entered is greater than the number of IDs in the database which is ", len(data))
-        return
+    if (head != None and tail != None):
+        print("cannot handle that option, try only head or only tail flags")
+        raise Exception
+    
+    if (head != None and head > len(ids)) or (tail != None and tail > len(ids)):  # (indices != None and indices > len(ids)):
+        print("head or tail value is greater than the number of IDs in the database which is ", len(ids))
+        raise Exception
 
     if (head != None):
         print(ids[0:head])
+        return
+
     if (tail != None):
         print(ids[-tail:-1])
-    if (offset != None):
-        print(ids[offset:-1])
-
+        return
 
 def _send_request(url):
     # If no errors return JSON, otherwise print response status code.
-    response = requests.get(url)
-    response.raise_for_status()
-    resp = response.content.decode('utf-8')
-    json_resp = json.loads(resp)
-    return json_resp
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        resp = response.content.decode('utf-8')
+        json_resp = json.loads(resp)
+        return json_resp
+
+    except Exception:
+        print("exception has occured in _send_request")
+    
 
 
 @cli.command()
@@ -111,29 +128,38 @@ def signed_url():
 
 
 def _uris_to_urls(uris):
-    urls = []
-    for uri in uris:
-        id = uri.split(':')[-1]
-        url = endpoint + drs_api + id
-        urls.append(url)
+    try:
+        urls = []
+        for uri in uris:
+            id = uri.split(':')[-1]
+            url = endpoint + drs_api + id
+            urls.append(url)
+            return urls
 
-    return urls
+    except Exception:
+        print("a general uris_to_urls Exception has occured")
+
+
 
 
 def _get_uris():
-    url = endpoint + drs_api
-    response = _send_request(url)
-    drs_objects = response['drs_objects']
-    ids = []
-    for drs_object in drs_objects:
-        id = drs_object['self_uri']
-        ids.append(id)
+    try:
+        url = endpoint + drs_api
+        response = _send_request(url)
+        drs_objects = response['drs_objects']
+        assert(drs_objects)
+        ids = []
+        for drs_object in drs_objects:
+            id = drs_object['self_uri']
+            assert(id)
+            ids.append(id)
 
-    with open('uris.txt', 'w') as uris:
-        for id in ids:
-            uris.write(id + '\n')
+        with open('uris.txt', 'w') as uris:
+            for id in ids:
+                uris.write(id + '\n')
+    except Exception:
+        print("Exception occured in _get_uris")
 
 
 if __name__ == '__main__':
-    # cli()
-    download('uris.txt', '/tmp')
+    list(None,None)
