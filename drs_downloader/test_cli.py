@@ -29,3 +29,7 @@ def test_list():
 
 def test_signed_url():
     test = Cli_Test(signed_url)
+
+
+if __name__ == '__main__':
+    
