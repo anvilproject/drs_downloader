@@ -4,9 +4,93 @@ import requests
 import json
 import async_downloader.download as async_downloader
 from pathlib import Path
+import os.path
+from DRSClient import DRSClient
+
 
 endpoint = 'https://development.aced-idp.org'
 drs_api = '/ga4gh/drs/v1/objects/'
+
+
+class Gen3DRSClient(DRSClient):
+    '''Handles Gen3 specific authentication using Fence'''
+    
+    # Initialize a DRS Client for the service at the specified url base
+    # and with the REST resource to provide an access key 
+    def __init__(self, api_url_base,  access_token_resource_path, api_key_path,
+    access_id=None, debug=False):
+        super().__init__(api_url_base, access_id, debug=debug)
+        self.api_key = None
+        self.access_token_resource_path = access_token_resource_path
+        self.api_key_path = api_key_path
+        #self.authorize()
+
+    def authorize(self):
+        full_key_path = os.path.expanduser(self.api_key_path)
+        try:
+            with open(full_key_path) as f:
+                self.api_key = json.load(f)
+            code = self.updateAccessToken()
+            if code == 401:
+                print('Invalid access token in {}'.format(full_key_path))
+                self.api_key = None
+            elif code != 200:
+                print('Error {} getting Access token for {}'.format(code, self.api_url_base))
+                print('Using {}'.format(full_key_path))
+                self.api_key = None
+                
+        except:
+            self.api_key = None
+
+    # Obtain an access_token using the provided Fence API key.
+    # The client object will retain the access key for subsequent calls
+    def updateAccessToken(self):
+        headers = {'Content-Type': 'application/json'}
+        api_url = '{0}{1}'.format(self.api_url_base, self.access_token_resource_path)
+        response = requests.post(api_url, headers=headers, json=self.api_key)
+
+        if response.status_code == 200:
+            resp = json.loads(response.content.decode('utf-8'))
+            self.access_token = resp['access_token']
+            self.authorized = True
+        else:
+            self.has_auth = False
+        return response.status_code
+       
+    def get_access_url(self, object_id, access_id=None):
+        if not self.authorized:
+            self.authorize()
+        return DRSClient.get_access_url(self, object_id, access_id=access_id)
+
+
+class bdcDRSClient(Gen3DRSClient):
+
+    # Mostly done by the Gen3DRSClient, this just deals with url and end point specifics
+    def __init__(self, api_key_path, access_id=None,  debug=False):
+        super().__init__('https://development.aced-idp.org', '/user/credentials/cdis/access_token',api_key_path, access_id, debug)
+
+
+class anvilDRSClient(Gen3DRSClient):
+
+    def __init__(self, api_key_path, userProject=None, access_id=None,  debug=False):
+        self.userProject = userProject
+        super().__init__('https://gen3.theanvil.io','/user/credentials/api/access_token', api_key_path, access_id, debug)
+
+    # Get a URL for fetching bytes. 
+    # Anvil GCP resources requires you to provide the userAccount to which charges will be accrued
+    # That user account must grant serviceusage.services.use access to your anvil service account
+    # e.g. to user-123@anvilprod.iam.gserviceaccount.com
+    def get_access_url(self, object_id, access_id=None):
+        result = super().get_access_url(object_id, access_id)
+
+        if result != None:
+            if self.userProject == None:
+                return result
+            else:
+                return '{}&userProject={}'.format(result, self.userProject)
+        else:
+            return None
+
 
 
 @click.group(no_args_is_help=True)
@@ -31,40 +115,37 @@ def credentials():
 # @cli.command()
 # @click.option('--file', default=None, show_default=True, help='Path containing the URIs to download.')
 # @click.option('--dest', default=None, show_default=True, help='Path containing the URIs to download.')
-def download(file, dest):
+def download(credentials_path,file, dest):
     """Downloads the DRS object."""
     # The DRS URIs
     # A Google project to be billed for the download costs
     # A download destination
     # User credentials
-    try:
-        with open(file, 'r') as uris_file:
-            uris = uris_file.readlines()
-        urls = _uris_to_urls(uris)
+    endpoint = 'https://development.aced-idp.org'
+    drs_api = '/ga4gh/drs/v1/objects/'
 
     urls = []
-
     # Read URI's from provided file
     with open(file, 'r') as uris_file:
         uris = uris_file.read().splitlines()
         for uri in uris:
             # Create new DownloadURL instance and add it to the list for the async downloader.
-            download_url = _createDownloadUrl(uri)
+            id = uri.split(':')[-1]
+            download_url = get_signed_url(credentials_path,id)
+            find_data_url = endpoint + drs_api + id
+            drs = _send_request(find_data_url)
+            md5 = drs['checksums'][0]['checksum']
+            size = drs['size']
+            print("Download URL: ",download_url," md5 ",md5," size ",size)
+          
+            download_url = async_downloader.DownloadURL(download_url, md5, size)
             urls.append(download_url)
 
     # Start download of the given URI.
     async_downloader.download(urls, Path('DATA'))
 
 
-def _createDownloadUrl(uri):
-    # Get md5 hash and size of the file to create a DownloadURL instance.
-    url = _uri_to_url(uri)
-    drs = _send_request(url)
-    md5 = drs['checksums'][0]['checksum']
-    size = drs['size']
 
-    download_url = async_downloader.DownloadURL(url, md5, size)
-    return download_url
 
 # @cli.command()
 # @click.option('--uri', default=None, show_default=True, help='URI of the file of interest')
@@ -72,7 +153,6 @@ def info(uri):
     """Displays information of a given DRS object."""
 
     # Send request to endpoint with the DRS object URI provided by the user.
-    assert(uri,endpoint,drs_api)
     url = endpoint + drs_api + uri
     try:
         response = _send_request(url)
@@ -146,19 +226,35 @@ def signed_url():
     return True
 
 
-def _uris_to_urls(uris):
-    try:
-        urls = []
-        for uri in uris:
-            id = uri.split(':')[-1]
-            url = endpoint + drs_api + id
-            urls.append(url)
-            return urls
-
-    except Exception:
-        print("a general uris_to_urls Exception has occurred")
 
 
+# @cli.command()
+# @click.option('--ids', default=None, show_default=True, help='The ')
+# @click.option('--credentials', default=None, show_default=True, help='The first number of lines to display.')
+def get_signed_url(Credentials,Drs_ids):
+    
+    test_data = {'BioDataCatalyst' : {'drs_client': bdcDRSClient('~/Desktop/credentials.json', 's3', debug=True),'drs_ids': [Drs_ids]}}
+    
+    print(test_data)
+    for (testname, test) in test_data.items():
+        print (testname)
+        drsClient = test['drs_client']
+    
+        for drs_id in test['drs_ids']:
+            res = drsClient.get_object(drs_id)
+            #print(f'GetObject for {drs_id}')
+            #print (json.dumps(res, indent=3))
+            # Get and access URL
+            try:
+                url = drsClient.get_access_url(drs_id)
+                #print(f'URL for {drs_id}')
+                #print (url)
+                return url
+            except:
+                if drsClient.api_key  == None:
+                    print("This DRS client has not obtained authorization and cannot obtain URLs for controlled access objects")
+                else:
+                    print("You may not have authorization for this object")
 
 
 def _get_uris():
@@ -166,11 +262,9 @@ def _get_uris():
         url = endpoint + drs_api
         response = _send_request(url)
         drs_objects = response['drs_objects']
-        assert(drs_objects)
         ids = []
         for drs_object in drs_objects:
             id = drs_object['self_uri']
-            assert(id)
             ids.append(id)
 
         with open('uris.txt', 'w') as uris:
@@ -181,6 +275,7 @@ def _get_uris():
 
 
 if __name__ == '__main__':
+
+        download('~/Desktop/credentials.json','uris.txt'," ")
     # cli()
-    download('uris.txt', '/tmp')
     # _get_uris()
