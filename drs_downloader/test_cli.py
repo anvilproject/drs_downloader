@@ -27,9 +27,9 @@ def test_info():
 def test_list():
     test = Cli_Test(list)
 
-def test_signed_url():
-    test = Cli_Test(signed_url)
+def test_get_signed_url():
+    test = Cli_Test(get_signed_url)
 
 
 if __name__ == '__main__':
-    
+    test_download()
