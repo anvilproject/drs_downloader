@@ -1,11 +1,12 @@
-from re import I
-import click
-import requests
-import json
-import async_downloader.download as async_downloader
-from pathlib import Path
-import os.path
 from DRSClient import DRSClient
+from pathlib import Path
+from re import I
+import async_downloader.download as async_downloader
+import click
+import json
+import os.path
+import requests
+from typing import List
 
 
 endpoint = 'https://development.aced-idp.org'
@@ -127,6 +128,7 @@ def download(credentials_path: Path, file: Path, dest: Path) -> None:
     endpoint = 'https://development.aced-idp.org'
     drs_api = '/ga4gh/drs/v1/objects/'
 
+    credentials = bdcDRSClient(credentials_path, 's3', debug=True),
     urls = []
     # Read URI's from provided file
     with open(file, 'r') as uris_file:
@@ -134,7 +136,7 @@ def download(credentials_path: Path, file: Path, dest: Path) -> None:
         for uri in uris:
             # Create new DownloadURL instance and add it to the list for the async downloader.
             id = uri.split(':')[-1]
-            download_url = get_signed_url(credentials_path, id)
+            download_url = get_signed_url(credentials, id)
             find_data_url = endpoint + drs_api + id
             drs = _send_request(find_data_url)
             md5 = drs['checksums'][0]['checksum']
@@ -227,10 +229,14 @@ def _send_request(url: str) -> dict:
 # @cli.command()
 # @click.option('--ids', default=None, show_default=True, help='The ')
 # @click.option('--credentials', default=None, show_default=True, help='The first number of lines to display.')
-def get_signed_url(Credentials: Path, Drs_ids: list[str]) -> str:
+def get_signed_url(credentials: bdcDRSClient, drs_ids: List[str]) -> str:
 
-    test_data = {'BioDataCatalyst': {'drs_client': bdcDRSClient(
-        '~/Desktop/credentials.json', 's3', debug=True), 'drs_ids': [Drs_ids]}}
+    test_data = {
+        'BioDataCatalyst': {
+            'drs_client': credentials,
+            'drs_ids': [drs_ids]
+        }
+    }
 
     print(test_data)
     url = ''
@@ -258,9 +264,10 @@ def get_signed_url(Credentials: Path, Drs_ids: list[str]) -> str:
     return url
 
 
-def _get_uris(url: str) -> list[str]:
+def _get_uris(url: str) -> List[str]:
+    """Helper method to write DRS id's from a given endpoint to a file 'uris.txt'. Useful for testing."""
     ids = []
-    
+
     try:
         url = endpoint + drs_api
         response = _send_request(url)
@@ -279,8 +286,4 @@ def _get_uris(url: str) -> list[str]:
 
 
 if __name__ == '__main__':
-
-    # download('~/Desktop/credentials.json', 'uris.txt', " ")
-    # cli()
-    # _get_uris()
-    _send_request('https://development.aced-idp.org/ga4gh/drs/v1/objects')
+    cli()

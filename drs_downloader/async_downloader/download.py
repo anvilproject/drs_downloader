@@ -115,9 +115,6 @@ def download(urls: List[DownloadURL], dest):
     _logger(__name__).info(f'{time.monotonic() - start_code} seconds {results}')
 
 
-def hello():
-    return 'hello'
-
 # async def main():
 #     # if len(sys.argv) <= 1:
 #     #     print('Add URLS')

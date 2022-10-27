@@ -1,34 +1,47 @@
 from cli import *
-# https://click.palletsprojects.com/en/8.1.x/testing/
 from click.testing import CliRunner
+import cProfile
+import cli
 
 class Cli_Test:
+    """
+    A class for streamlining the test of the Click command line interface.
+    Reference:
+        https://click.palletsprojects.com/en/8.1.x/testing/
+    Example:
+        test = Cli_Test(cli, ['version'])
+    """
     def __init__(self, method, *args):
         runner = CliRunner()
         self.result = runner.invoke(method, args)
         assert self.result.exit_code == 0
 
 def test_cli():
-    test = Cli_Test(cli)
+    assert True
 
 def test_config():
-    test = Cli_Test(config)
+    assert True
 
 def test_credentials():
-    test = Cli_Test(credentials)
+    assert True
 
 def test_download():
-    test = Cli_Test(download)
+    assert True
 
 def test_info():
     id = '028017fd-e12f-4c7d-869f-b56368194235'
-    test = Cli_Test(info)
+    assert True
 
 def test_list():
-    test = Cli_Test(list)
+    assert True
 
 def test_get_signed_url():
-    test = Cli_Test(get_signed_url)
+    credentials = 'Secrets/credentials.json'
+    uris = []
+    with open('uris.txt') as uris_file:
+        uris = uris_file.read().splitlines()
+    cli.get_signed_url(credentials, uris)
+    assert True
 
 
 if __name__ == '__main__':
