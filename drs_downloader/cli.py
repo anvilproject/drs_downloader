@@ -1,20 +1,32 @@
 from DRSClient import DRSClient
 from pathlib import Path
-from re import I
+from typing import List
+import aiohttp
 import async_downloader.download as async_downloader
+import asyncio
 import click
 import json
+import logging
 import os.path
+import pandas as pd
 import requests
-from typing import List
+import time
 
+from drs_downloader.async_downloader.download import DownloadURL
 
+"""
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
+"""
 endpoint = 'https://development.aced-idp.org'
-drs_api = '/ga4gh/drs/v1/objects/'
+drs_api = '/ga4gh/drs/v1/objects?page=10'
 
 
 class Gen3DRSClient(DRSClient):
-    '''Handles Gen3 specific authentication using Fence'''
+    """Handles Gen3 specific authentication using Fence"""
 
     # Initialize a DRS Client for the service at the specified url base
     # and with the REST resource to provide an access key
@@ -67,34 +79,10 @@ class Gen3DRSClient(DRSClient):
 
 
 class bdcDRSClient(Gen3DRSClient):
-
     # Mostly done by the Gen3DRSClient, this just deals with url and end point specifics
     def __init__(self, api_key_path, access_id=None,  debug=False):
         super().__init__('https://development.aced-idp.org',
                          '/user/credentials/cdis/access_token', api_key_path, access_id, debug)
-
-
-class anvilDRSClient(Gen3DRSClient):
-
-    def __init__(self, api_key_path, userProject=None, access_id=None,  debug=False):
-        self.userProject = userProject
-        super().__init__('https://gen3.theanvil.io',
-                         '/user/credentials/api/access_token', api_key_path, access_id, debug)
-
-    # Get a URL for fetching bytes.
-    # Anvil GCP resources requires you to provide the userAccount to which charges will be accrued
-    # That user account must grant serviceusage.services.use access to your anvil service account
-    # e.g. to user-123@anvilprod.iam.gserviceaccount.com
-    def get_access_url(self, object_id, access_id=None):
-        result = super().get_access_url(object_id, access_id)
-
-        if result != None:
-            if self.userProject == None:
-                return result
-            else:
-                return '{}&userProject={}'.format(result, self.userProject)
-        else:
-            return None
 
 
 @click.group(no_args_is_help=True)
@@ -104,115 +92,87 @@ def cli():
     return True
 
 
-# @cli.command()
-def config():
-    """Configures the downloader."""
-    return True
+async def create_download_url(session, url: str) -> DownloadURL:
+    """Create an instance of DownloadURL with a download URL, md5 hash, and object size."""
+
+    md5, size = None
+    with session.get(url) as resp:
+        response = await resp.json()
+        md5 = response['checksums'][0]['checksum']
+        size = response['size']
+
+    downloadUrl = DownloadURL(url, md5, size)
+    return downloadUrl
 
 
-# @cli.command()
-def credentials():
-    """Authenticates the user."""
-    return True
+async def get_md5s_and_sizes(uris_file: str):
+    """"""
+
+    with open(uris_file, 'r') as f:
+        uris = f.read().splitlines()
+        whats_this = map(lambda x: endpoint + drs_api + x.split(':')[-1], uris)
+        urls = [list_obj for list_obj in whats_this]
+
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for url in urls:
+            url = tasks.append(asyncio.ensure_future(
+                create_download_url(session, url)))
+        md5s_and_sizes = await asyncio.gather(*tasks)
+        return urls, md5s_and_sizes
 
 
-# @cli.command()
-# @click.option('--file', default=None, show_default=True, help='Path containing the URIs to download.')
-# @click.option('--dest', default=None, show_default=True, help='Path containing the URIs to download.')
-def download(credentials_path: Path, file: Path, dest: Path) -> None:
-    """Downloads the DRS object."""
-    # The DRS URIs
-    # A Google project to be billed for the download costs
-    # A download destination
-    # User credentials
-    endpoint = 'https://development.aced-idp.org'
-    drs_api = '/ga4gh/drs/v1/objects/'
-
-    credentials = bdcDRSClient(credentials_path, 's3', debug=True),
+def download(credentials: str, uris_file: str, dest: str):
+    """Download DRS objects from a list of DRS ids."""
     urls = []
-    # Read URI's from provided file
-    with open(file, 'r') as uris_file:
-        uris = uris_file.read().splitlines()
-        for uri in uris:
-            # Create new DownloadURL instance and add it to the list for the async downloader.
-            id = uri.split(':')[-1]
-            download_url = get_signed_url(credentials, id)
-            find_data_url = endpoint + drs_api + id
-            drs = _send_request(find_data_url)
-            md5 = drs['checksums'][0]['checksum']
-            size = drs['size']
-            print("Download URL: ", download_url, " md5 ", md5, " size ", size)
 
-            download_url = async_downloader.DownloadURL(
-                download_url, md5, size)
-            urls.append(download_url)
+    # ID Parsing, md5/size requests
+    start_1 = time.time()
+    drs_client = bdcDRSClient(credentials, 's3', debug=True)
+    uris, md5sandSizes = asyncio.run(get_md5s_and_sizes(uris_file))
+    end_1 = time.time()
+    print('total time to do id parsing and md5 and size http requests', end_1-start_1)
 
-    # Start download of the given URI.
-    async_downloader.download(urls, dest)
+    # URL signing and authentication
+    start_2 = time.time()
+    download_url = get_signed_url(drs_client, uris)
+    end_2 = time.time()
+    print('total time to do the URL signing and authentication', end_2-start_2)
 
+    # DRS object downloading
+    start_3 = time.time()
+    for md5andSize in md5sandSizes:
+        download_url_bundle = async_downloader.DownloadURL(
+            download_url[md5sandSizes.index(md5andSize)], md5andSize[0], md5andSize[1])
+        urls.append(download_url_bundle)
+    async_downloader.download(urls, Path('DATA'))
+    end_3 = time.time()
 
-# @cli.command()
-# @click.option('--uri', default=None, show_default=True, help='URI of the file of interest')
-def info(uri: str) -> dict:
-    """Displays information of a given DRS object."""
-
-    response = {}
-    # Send request to endpoint with the DRS object URI provided by the user.
-    url = endpoint + drs_api + uri
-    try:
-        response = _send_request(url)
-
-    except Exception:
-        print("response call to _send_request(url) has failed in info function")
-
-    return response
+    print("total time to do the downloading and bundling of the information", end_3-start_3)
 
 
-# @cli.command()
-# @click.option('--head', default=None, show_default=True, help='The first number of lines to display.')
-# @click.option('--tail', default=None, show_default=True, help='The last last number of lines to display.')
-# @click.option('--offset', default=None, show_default=True, help='The number of lines to skip before displaying.')
-def list(head: int, tail: int, offset: int) -> None:
-    """Lists all DRS Objects at a given endpoint."""
-    try:
-        url = endpoint + drs_api
-        response = _send_request(url)
-        drs_objects = response['drs_objects']
-        ids = []
-        for drs_object in drs_objects:
-            id = drs_object['id']
-            ids.append(id)
+def get_signed_url(drs_client, drs_ids: List[str]) -> List[str]:
+    """Return a list of signed download URLs from a list of DRS objects"""
+    test_data = {
+        'BioDataCatalyst': {
+            'drs_client': drs_client,
+            'drs_ids': drs_ids
+        }
+    }
 
-        if (head == None and tail == None):
-            print(ids)
-            return
-    except Exception:
-        print("List function Drs_objects Exceptions has occured")
+    urls = []
+    for (testname, test) in test_data.items():
+        drsClient = test['drs_client']
+        for drs_id in test['drs_ids']:
+            url = drsClient.get_access_url(drs_id)
+            # print(url)
+            urls.append(url)
 
-    if ((head != None and type(head != int)) or (tail != None and type(tail) != int)):
-        print("Please only enter numbers for head and tail and only strings of format 'int int' for indices")
-        raise Exception
-
-    if (head != None and tail != None):
-        print("cannot handle that option, try only head or only tail flags")
-        raise Exception
-
-    # (indices != None and indices > len(ids)):
-    if (head != None and head > len(ids)) or (tail != None and tail > len(ids)):
-        print("head or tail value is greater than the number of IDs in the database which is ", len(ids))
-        raise Exception
-
-    if (head != None):
-        print(ids[0:head])
-        return
-
-    if (tail != None):
-        print(ids[-tail:-1])
-        return
+    return urls
 
 
 def _send_request(url: str) -> dict:
-    # If no errors return JSON, otherwise print response status code.
+    """Sends a GET request to a given URL. Returns the response in JSON format."""
     json_resp = {}
     try:
         response = requests.get(url)
@@ -221,69 +181,77 @@ def _send_request(url: str) -> dict:
         json_resp = json.loads(resp)
 
     except Exception:
-        print("exception has occured in _send_request")
+        print("exception has occurred in _send_request")
 
     return json_resp
 
 
 # @cli.command()
-# @click.option('--ids', default=None, show_default=True, help='The ')
-# @click.option('--credentials', default=None, show_default=True, help='The first number of lines to display.')
-def get_signed_url(credentials: bdcDRSClient, drs_ids: List[str]) -> str:
+# @click.option('--id', default=None, show_default=True, help='URI of the file of interest')
+def info(id: str) -> dict:
+    """Displays information of a given DRS object.
+    Send request to endpoint with the DRS object URI provided by the user.
+    """
 
-    test_data = {
-        'BioDataCatalyst': {
-            'drs_client': credentials,
-            'drs_ids': [drs_ids]
-        }
-    }
-
-    print(test_data)
-    url = ''
-    for (testname, test) in test_data.items():
-        print(testname)
-        drsClient = test['drs_client']
-
-        for drs_id in test['drs_ids']:
-            res = drsClient.get_object(drs_id)
-            #print(f'GetObject for {drs_id}')
-            #print (json.dumps(res, indent=3))
-            # Get and access URL
-            try:
-                url = drsClient.get_access_url(drs_id)
-                #print(f'URL for {drs_id}')
-                #print (url)
-                return url
-            except:
-                if drsClient.api_key == None:
-                    print(
-                        "This DRS client has not obtained authorization and cannot obtain URLs for controlled access objects")
-                else:
-                    print("You may not have authorization for this object")
-
-    return url
-
-
-def _get_uris(url: str) -> List[str]:
-    """Helper method to write DRS id's from a given endpoint to a file 'uris.txt'. Useful for testing."""
-    ids = []
-
+    response = {}
+    url = endpoint + drs_api + id
     try:
-        url = endpoint + drs_api
+        response = _send_request(url)
+    except Exception:
+        print("response call to _send_request(url) has failed in info function")
+
+    return response
+
+
+# @cli.command()
+def list():
+    """Lists all DRS Objects at a given endpoint."""
+
+    count = 0
+    num = 0
+    url = endpoint + drs_api + str(num)
+    response = _send_request(url)
+    drs_objects = response['drs_objects']
+    ids = []
+    while (drs_objects):
+        for drs_object in drs_objects:
+            count = count+1
+            id = drs_object['id']
+            # print(id)
+            if (drs_object and drs_object['access_methods'] and drs_object['access_methods'][0]['access_id']):
+                ids.append(id)
+
+        num = num+1
+        url = endpoint + drs_api + str(num)
         response = _send_request(url)
         drs_objects = response['drs_objects']
-        for drs_object in drs_objects:
-            id = drs_object['self_uri']
-            ids.append(id)
 
-        with open('uris.txt', 'w') as uris:
-            for id in ids:
-                uris.write(id + '\n')
-    except Exception:
-        print("Exception occured in _get_uris")
+    # write URIS too why not
+    # with open('uris.txt', 'w') as uris:
+    #    for id in ids:
+    #        uris.write(id + '\n')
 
-    return ids
+    print(ids)
+
+
+def extract_tsv_information(tsv_path: str):
+    """Downloads DRS objects with ID's from a given TSV file."""
+    urls = []
+    df = pd.read_csv(tsv_path, sep='\t')
+    for i in range(5):
+        print(df['file_sha256'][i])
+        print(df['file_size'][i])
+        print(df['file_url'][i])
+        download_url = async_downloader.DownloadURL(
+            df['file_url'][i], df['file_sha256'][i], df['file_size'][i])
+        urls.append(download_url)
+
+    async_downloader.download(urls, Path('TSV_DATA'))
 
 
 if __name__ == '__main__':
-    cli()
+    # Extract_TSV_Information('Terra Data - 1M Neurons 2022-10-25 03.36.tsv')
+    start = time.time()
+    download('~/Desktop/credentials.json', 'uris.txt', '')
+    end = time.time()
+    print('Total Execution time', end-start)
