@@ -44,11 +44,13 @@ async def async_download(url, headers, save_path):
             _logger(__name__).debug(('get', url, request))
             file = await aiofiles.open(save_path, 'wb')
             await file.write(await request.content.read())
-            _logger(__name__).debug(('download', threading.get_ident(), save_path))
+            _logger(__name__).debug(
+                ('download', threading.get_ident(), save_path))
 
 
 class Wrapped(object):
     """Wrap the read() method and calculate MD5"""
+
     def __init__(self, file_, md5_hash):
         self._file = file_
         self._md5_hash = md5_hash
@@ -72,7 +74,8 @@ async def process(url, size, expected_md5, dest):
     for number, sizes in enumerate(parts_generator(size)):
         part_file_name = os.path.join(tmp_dir.name, f'{filename}.part{number}')
         file_parts.append(part_file_name)
-        tasks.append(async_download(url, {'Range': f'bytes={sizes[0]}-{sizes[1]}'}, part_file_name))
+        tasks.append(async_download(
+            url, {'Range': f'bytes={sizes[0]}-{sizes[1]}'}, part_file_name))
     await asyncio.gather(*tasks)
     with open(dest.joinpath(filename), 'wb') as wfd:
         md5_hash = hashlib.md5()
@@ -84,7 +87,8 @@ async def process(url, size, expected_md5, dest):
         # compare calculated md5 vs expected
         # assert expected_md5 == actual_md5, f"Actual md5 {actual_md5} does not match expected {expected_md5}"
         base64_md5 = base64.b64encode(bytes.fromhex(actual_md5))
-        _logger(__name__).debug(('md5', threading.get_ident(), filename, actual_md5, base64_md5))
+        _logger(__name__).debug(
+            ('md5', threading.get_ident(), filename, actual_md5, base64_md5))
     return True
 
 
@@ -110,10 +114,15 @@ def download(urls: List[DownloadURL], dest):
     import time
     start_code = time.monotonic()
     _logger(__name__).debug('START')
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     results = loop.run_until_complete(_download(urls, dest))
-    _logger(__name__).info(f'{time.monotonic() - start_code} seconds {results}')
+    _logger(__name__).info(
+        f'{time.monotonic() - start_code} seconds {results}')
 
+
+def hello():
+    return 'hello'
 
 # async def main():
 #     # if len(sys.argv) <= 1:

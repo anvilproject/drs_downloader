@@ -3,7 +3,6 @@ import json
 import re
 
 
-
 class DRSClient:
 	def __init__(self, api_url_base, access_id=None, public=False, debug=False):
 		'''Initialize a DRS Client for the service at the specified url base
