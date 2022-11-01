@@ -1,54 +1,88 @@
-
-from download import DownloadURL
-from Gen3DRSClient import Gen3DRSClient
+from download import DownloadURL, download
+from Gen3DRSClient import bdcDRSClient
 from pathlib import Path
 from typing import List
 import csv
 import json
 import requests
 
-endpoint = 'https://development.aced-idp.org/ga4gh/drs/v1/objects'
+_endpoint = 'https://development.aced-idp.org/ga4gh/drs/v1/objects/'
 
 
-def download(tsv_file: str, dest: str):
-    """Download DRS objects from a list of DRS ids."""
+def download_drs(tsv_file: str, dest: str):
+    """Download DRS objects from a list of DRS ids.
 
-    urls = []
+    Args:
+        tsv_file (str): Path to the input TSV file.
+        dest (str): Directory to download the DRS objects to.
+    """
 
     # Read in DRS URI's from TSV file. Check for hash and sizes as well.
+    uris = extract_tsv_info(tsv_file)
 
     # URL signing and authentication
-    download_url = get_signed_url(drs_client, uris)
+    downloadUrls = []
+    for uri in uris:
+        downloadUrl = create_download_url(uri)
+        downloadUrls.append(downloadUrl)
 
     # DRS object downloading
-    for md5andSize in md5sandSizes:
-        download_url_bundle = async_downloader.DownloadURL(
-            download_url[md5sandSizes.index(md5andSize)], md5andSize[0], md5andSize[1])
-        urls.append(download_url_bundle)
-    async_downloader.download(urls, Path('DATA'))
+    dest = Path(dest)
+    if (dest.is_dir() is False):
+        dest.mkdir(parents=True)
+    download(downloadUrls, dest)
 
 
-def get_signed_url(drs_uri: str) -> List[str]:
-    """Return a signed download URL for a given DRS object"""
-    id = drs_uri.split(':')[-1]
-    response = _send_request(endpoint + id) 
+def get_signed_url(url: str) -> str:
+    """Return a signed URL used to download a DRS object.
 
-    url = response['access_methods'][0]['access_url']
-    return url
+    Args:
+        url (str): The base URL for a given DRS object.
 
-def _create_download_url(url: str) -> DownloadURL:
-    """Create an instance of DownloadURL with a download URL, md5 hash, and object size."""
+    Returns:
+        str: The signed URL for the DRS object.
+    """
+    client = bdcDRSClient('Secrets/credentials.json')
+    signedUrl = client.get_access_url(url, 's3')
 
-    response = _send_request(url)
+    return signedUrl
+
+
+def create_download_url(uri: str) -> DownloadURL:
+    """Return a signed download URL for a given DRS object.
+
+    Args:
+        uri (str): The DRS ID to download.
+
+    Returns:
+        DownloadURL: The DownloadURL instance for the given DRS object.
+    """
+
+    id = uri.split(':')[-1]
+    object_url = _endpoint + id
+    response = send_request(object_url)
+
+    response = send_request(object_url)
     md5 = response['checksums'][0]['checksum']
     size = response['size']
 
-    downloadUrl = DownloadURL(url, md5, size)
+    signedUrl = get_signed_url(object_url)
+
+    # Create an instance of DownloadURL with a download URL, md5 hash, and
+    # object size.
+    downloadUrl = DownloadURL(signedUrl, md5, size)
     return downloadUrl
 
 
-def _send_request(url: str) -> dict:
-    """Sends a GET request to a given URL. Returns the response in JSON format."""
+def send_request(url: str) -> dict:
+    """Send a GET request to a given URL.
+
+    Args:
+        url (str): The URL to query.
+
+    Returns:
+        dict: The response in JSON format.
+    """
     json_resp = {}
     try:
         response = requests.get(url)
@@ -62,18 +96,27 @@ def _send_request(url: str) -> dict:
     return json_resp
 
 
-def _extract_tsv_information(tsv_file: str) -> List[DownloadURL]:
-    """Downloads DRS objects with ID's from a given TSV file."""
-    
-    urls = []
-    
+def extract_tsv_info(tsv_file: str) -> List[str]:
+    """Extract the DRS URI's from the provided TSV file.
+
+    Args:
+        tsv_file (str): The input file with a 'file_drs_uri' header.
+
+    Returns:
+        List[str]: The URI's corresponding to the DRS objects.
+    """
+
+    uris = []
+
     with open(tsv_file) as tsv:
         # Use DictReader here to skip header row
         data = csv.DictReader(tsv, delimiter='\t')
         for row in data:
-            md5 = row['file_sha256']
-            size = row['file_size']
-            drs_uri = row['file_drs_uri']
+            uri = row['file_drs_uri']
+            uris.append(uri)
+
+    return uris
+
 
 if __name__ == '__main__':
-    _extract_tsv_information('tests/terra-data.tsv')
+    download_drs('tests/gen3-data.tsv', "/tmp/DATA")
