@@ -1,8 +1,6 @@
-from main import download_drs, _get_signed_url, _create_download_url, \
-    _extract_tsv_info, send_request
 from typing import List
-import sys
-sys.path.append('src/')
+from src.main import download_drs, _get_signed_url, _create_download_url, \
+    _extract_tsv_info, _send_request
 
 
 def test_download_drs():
@@ -27,7 +25,7 @@ def test_create_download_url():
 
 def test_send_request():
     url = 'https://development.aced-idp.org/'
-    response = send_request(url)
+    response = _send_request(url)
     assert response
     assert False
 
@@ -40,7 +38,7 @@ def test_extract_tsv_info():
 
 
 def _get_uris(url: str) -> List[str]:
-    response = send_request(url)
+    response = _send_request(url)
     uris = []
     for drs_object in response['drs_objects']:
         uri = drs_object['self_uri']

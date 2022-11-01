@@ -18,12 +18,12 @@ def download_drs(tsv_file: str, dest: str):
     """
 
     # Read in DRS URI's from TSV file. Check for hash and sizes as well.
-    uris = extract_tsv_info(tsv_file)
+    uris = _extract_tsv_info(tsv_file)
 
     # URL signing and authentication
     downloadUrls = []
     for uri in uris:
-        downloadUrl = create_download_url(uri)
+        downloadUrl = _create_download_url(uri)
         downloadUrls.append(downloadUrl)
 
     # DRS object downloading
@@ -33,7 +33,7 @@ def download_drs(tsv_file: str, dest: str):
     download(downloadUrls, dest)
 
 
-def get_signed_url(url: str) -> str:
+def _get_signed_url(url: str) -> str:
     """Return a signed URL used to download a DRS object.
 
     Args:
@@ -48,7 +48,7 @@ def get_signed_url(url: str) -> str:
     return signedUrl
 
 
-def create_download_url(uri: str) -> DownloadURL:
+def _create_download_url(uri: str) -> DownloadURL:
     """Return a signed download URL for a given DRS object.
 
     Args:
@@ -66,7 +66,7 @@ def create_download_url(uri: str) -> DownloadURL:
     md5 = response['checksums'][0]['checksum']
     size = response['size']
 
-    signedUrl = get_signed_url(object_url)
+    signedUrl = _get_signed_url(object_url)
 
     # Create an instance of DownloadURL with a download URL, md5 hash, and
     # object size.
@@ -96,7 +96,7 @@ def send_request(url: str) -> dict:
     return json_resp
 
 
-def extract_tsv_info(tsv_file: str) -> List[str]:
+def _extract_tsv_info(tsv_file: str) -> List[str]:
     """Extract the DRS URI's from the provided TSV file.
 
     Args:
