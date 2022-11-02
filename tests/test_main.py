@@ -4,7 +4,7 @@ from typing import List
 from drs_download.main import download_drs, _get_signed_url, _create_download_url, _extract_tsv_info, _send_request
 
 expectedUrl = 'https://minio-default.aced-idp.org/aced-default/FOOBAR%3Ad62af3ff-756d-4e73-b6c6-e0bbd3bae50d/' \
-'tests/fixtures/projects/MyFirstProject/DATA/0940858111'
+    'tests/fixtures/projects/MyFirstProject/DATA/0940858111'
 
 
 def test_download_drs():
