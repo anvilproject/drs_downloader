@@ -136,3 +136,10 @@ site/
 
 # ignore vscode
 .vscode/
+
+# ignore Secrets
+Secrets
+
+# ignore python build files/directories
+*.egg-info
+__pycache__

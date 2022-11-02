@@ -4,11 +4,9 @@ See:
 https://packaging.python.org/guides/distributing-packages-using-setuptools/
 """
 
-import setuptools.command.build_py
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
-import subprocess
 
 here = path.abspath(path.dirname(__file__))
 
@@ -35,9 +33,9 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='tdu',  # Required
+    name='drs_downloader',  # Required
 
-    # Versions should comply with PEP 440:
+    # Versions should comply with PEP 440:/
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.0.1',  # Required
 
@@ -119,7 +117,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'tdu = drs_downloader.cli:cli'
+            'drs_downloader = drs_downloader.main:main'
         ],
     },
 
@@ -139,4 +137,3 @@ setup(
         'Source': 'https://github.com/anvilproject/drs_downloader',
     },
 )
-

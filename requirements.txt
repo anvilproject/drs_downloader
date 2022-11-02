@@ -3,3 +3,4 @@ aiohttp
 click
 gen3
 setuptools
+pytest-cov

@@ -1,5 +1,0 @@
-# https://stackoverflow.com/a/49033954
-[tool.pytest.ini_options]
-pythonpath = [
-  ".", "drs_download"
-]

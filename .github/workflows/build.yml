@@ -1,0 +1,78 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+# Optionally debug via SSH
+# Ref: https://fleetdm.com/engineering/tips-for-github-actions-usability
+# - name: Setup tmate session
+#   uses: mxschmitt/action-tmate@v3
+
+name: DRS Downloader
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest", "windows-latest"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --statistics
+
+      - name: Test with pytest
+        run: pytest --cov=drs_downloader
+
+  build:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["macos-latest", "ubuntu-latest", "windows-latest"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt pyinstaller
+          pyinstaller drs_downloader/main.py --onefile --name drs_downloader
+
+      - name: Prepare artifact for release (macOS and Ubuntu)
+        if: runner.os != 'Windows'
+        run: zip -j drs-downloader-${{ runner.os }}.zip dist/drs_downloader
+
+      - name: Prepare artifact for release (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: 7z a drs-downloader-${{ runner.os }}.zip ./dist/drs_downloader.exe
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: drs-downloader-${{ runner.os }}.zip

@@ -1,5 +1,5 @@
-from download import DownloadURL, download
-from Gen3DRSClient import bdcDRSClient
+from drs_downloader.download import download, DownloadURL
+from drs_downloader.Gen3DRSClient import bdcDRSClient
 from pathlib import Path
 from typing import List
 import csv
@@ -43,7 +43,7 @@ def _get_signed_url(url: str) -> str:
         str: The signed URL for the DRS object.
     """
     client = bdcDRSClient('Secrets/credentials.json')
-    signedUrl = client.get_access_url(url, 's3')
+    signedUrl = str(client.get_access_url(url, 's3'))
 
     return signedUrl
 
@@ -118,5 +118,10 @@ def _extract_tsv_info(tsv_file: str) -> List[str]:
     return uris
 
 
-if __name__ == '__main__':
+def main():
+    print("Welcome to the DRS downloader!")
     download_drs('tests/gen3-data.tsv', "/tmp/DATA")
+
+
+if __name__ == '__main__':
+    main()
