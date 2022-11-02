@@ -27,10 +27,10 @@ def download_drs(tsv_file: str, dest: str):
         downloadUrls.append(downloadUrl)
 
     # DRS object downloading
-    dest = Path(dest)
-    if (dest.is_dir() is False):
-        dest.mkdir(parents=True)
-    download(downloadUrls, dest)
+    dest_dir = Path(dest)
+    if (dest_dir.is_dir() is False):
+        dest_dir.mkdir(parents=True)
+    download(downloadUrls, dest_dir)
 
 
 def _get_signed_url(url: str) -> str:
@@ -60,9 +60,9 @@ def _create_download_url(uri: str) -> DownloadURL:
 
     id = uri.split(':')[-1]
     object_url = _endpoint + id
-    response = send_request(object_url)
+    response = _send_request(object_url)
 
-    response = send_request(object_url)
+    response = _send_request(object_url)
     md5 = response['checksums'][0]['checksum']
     size = response['size']
 
@@ -74,7 +74,7 @@ def _create_download_url(uri: str) -> DownloadURL:
     return downloadUrl
 
 
-def send_request(url: str) -> dict:
+def _send_request(url: str) -> dict:
     """Send a GET request to a given URL.
 
     Args:
