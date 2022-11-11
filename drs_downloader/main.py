@@ -59,12 +59,13 @@ async def _get_download_urls(uris: List[str]) -> List[DownloadURL]:
         'authorization': 'Bearer ' + token,
         'content-type': 'application/json'
     }
+    
     async with aiohttp.ClientSession(headers=header) as session:
-        download_urls = await asyncio.gather(*[_get_more(session, uri, url_endpoint) for uri in uris])
+        download_urls = await asyncio.gather(*[_get_file_info(session, uri, url_endpoint) for uri in uris])
         return download_urls
 
 
-async def _get_more(session: aiohttp.ClientSession, uri: str, endpoint: str) -> DownloadURL:
+async def _get_file_info(session: aiohttp.ClientSession, uri: str, endpoint: str) -> DownloadURL:
     """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
 
     Args:

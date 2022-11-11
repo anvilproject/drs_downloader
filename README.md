@@ -38,6 +38,16 @@ gcloud auth login
 gcloud config set project <project ID>
 ```
 
+https://anvil.terra.bio/#workspaces/anvil-stage-demo/DRS-downloader/data
+
+https://anvil.terra.bio/#profile?tab=externalIdentities
+
+Add instructions on how to become a member of our test terra project: https://anvil.terra.bio/#workspaces/anvil-stage-demo/DRS-downloader/data](https://anvil.terra.bio/#workspaces/anvil-stage-demo/DRS-downloader/data
+
+Add instructions or a link to gcloud setup
+
+Add instructions to link to the NHLBI BioData Catalyst Framework Services. including =google hack
+
 ## Usage
 
 ```sh

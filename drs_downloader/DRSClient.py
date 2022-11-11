@@ -1,5 +1,6 @@
 import requests
 import json
+import logging
 
 
 class DRSClient:
@@ -32,7 +33,7 @@ class DRSClient:
 
         api_url = '{0}/access/{1}'.format(object_id, access_id)
         if self.debug:
-            print(api_url)
+            logger.debug(api_url)
 
         response = requests.get(api_url, headers=headers)
         if self.debug:
