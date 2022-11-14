@@ -1,0 +1,5 @@
+mkdocs==1.4.1
+pre-commit
+pyinstaller
+pytest==7.1.3
+flake8
