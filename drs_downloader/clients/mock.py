@@ -7,10 +7,12 @@ import uuid
 from pathlib import Path
 import random
 
-from drs_downloader import MAX_SIZE_OF_OBJECT
+from drs_downloader import MB
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
 logger = logging.getLogger(__name__)
+
+MAX_SIZE_OF_OBJECT = 50 * MB
 
 
 class MockDrsClient(DrsClient):
