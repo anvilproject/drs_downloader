@@ -58,6 +58,13 @@ def mock(silent: bool, destination_dir: str):
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
+    for drs_object in drs_objects:
+        at_least_one_error = False
+        if len(drs_object.errors) > 0:
+            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+            at_least_one_error = True
+    if at_least_one_error:
+        exit(99)
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
@@ -118,6 +125,15 @@ def terra(silent: bool, destination_dir: str, manifest_path: str):
             else:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
+
+    for drs_object in drs_objects:
+        at_least_one_error = False
+        if len(drs_object.errors) > 0:
+            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+            at_least_one_error = True
+    if at_least_one_error:
+        exit(99)
+
 
 
 if __name__ == "__main__":

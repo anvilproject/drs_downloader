@@ -59,7 +59,7 @@ class MockDrsClient(DrsClient):
 
         # calculate actual part size from range see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
 
-        length_ = size - start
+        length_ = size - start + 1
         # logger.info((drs_object.name, start, length_))
         with open(f'/tmp/testing/{drs_object.name}.golden', 'rb') as f:
             f.seek(start)

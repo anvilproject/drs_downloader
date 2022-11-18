@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import logging
+import math
 import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -10,7 +11,7 @@ import tqdm
 import tqdm.asyncio
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
-    DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS, DEFAULT_PART_SIZE
+    DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS, DEFAULT_PART_SIZE, MB
 
 from drs_downloader.models import DrsClient, DrsObject
 
@@ -126,8 +127,8 @@ class DrsAsyncManager(DrsManager):
         """
         while size - start > part_size:
             yield start, start + part_size
-            # start += part_size + 1
-            start += part_size
+            start += part_size + 1
+            # start += part_size
         yield start, size
 
     async def _run_download_parts(self, drs_object: DrsObject, destination_path: Path) -> DrsObject:
@@ -139,24 +140,41 @@ class DrsAsyncManager(DrsManager):
         Returns:
             list of paths to files for each part, in order.
         """
-        tasks = []
+        # create a list of parts
+        parts = []
         for start, size in self._parts_generator(size=drs_object.size, part_size=self.part_size):
-            task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
-                                                                      destination_path=destination_path))
-            tasks.append(task)
+            parts.append((start, size, ))
 
-        if len(tasks) > 1000:
-            logger.warning(f'tasks > 1000 {drs_object.name} has over 1000 parts, consider optimization.')
+        if len(parts) > 1000:
+            logger.error(f'tasks > 1000 {drs_object.name} has over 1000 parts, consider optimization. ({len(parts)})')
 
         paths = []
-        for chunk_tasks in DrsAsyncManager._chunker(tasks, self.max_simultaneous_part_handlers):
+        # TODO - tqdm ugly here?
+        for chunk_parts in \
+                tqdm.tqdm(DrsAsyncManager._chunker(parts, self.max_simultaneous_part_handlers),
+                          total=math.ceil(len(parts)/self.max_simultaneous_part_handlers),
+                          desc="  * batch",
+                          leave=False,
+                          disable=self.disable):
+            chunk_tasks = []
+            for start, size in chunk_parts:
+                task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
+                                                                          destination_path=destination_path))
+                chunk_tasks.append(task)
+
             chunk_paths = [
                 await f
                 for f in
                 tqdm.tqdm(asyncio.as_completed(chunk_tasks), total=len(chunk_tasks), leave=False,
                           desc=f"    * {drs_object.name}", disable=self.disable)
             ]
+            # something bad happened
+            if None in chunk_paths:
+                logger.error(f"{drs_object.name} had missing part.")
+                return drs_object
+
             paths.extend(chunk_paths)
+
         drs_object.file_parts = paths
 
         # re-assemble and test the file parts
@@ -165,7 +183,9 @@ class DrsAsyncManager(DrsManager):
         assert checksum_type in hashlib.algorithms_available, f"Checksum {checksum_type} not supported."
         md5_hash = hashlib.new(checksum_type)
         with open(destination_path.joinpath(drs_object.name), 'wb') as wfd:
-            for f in sorted(drs_object.file_parts):
+            # sort the items of the list in place - Numerically based on start i.e. "xxxxxx.start.end.part"
+            drs_object.file_parts.sort(key=lambda x: int(str(x).split('.')[-3]))
+            for f in drs_object.file_parts:
                 fd = open(f, 'rb')
                 wrapped_fd = Wrapped(fd, md5_hash)
                 # efficient way to write
@@ -219,8 +239,7 @@ class DrsAsyncManager(DrsManager):
 
         drs_objects_with_file_parts = [
             await f
-            for f in tqdm.tqdm(asyncio.as_completed(tasks), total=len(tasks), leave=leave, desc="  * batch",
-                               disable=self.disable)
+            for f in asyncio.as_completed(tasks)
         ]
 
         return drs_objects_with_file_parts
@@ -357,4 +376,8 @@ class DrsAsyncManager(DrsManager):
         """
         # TODO - now that we have the objects to download, we have an opportunity to shape the downloads
         # TODO - e.g. smallest files first?  tweak MAX_* to optimize per workload
+        # for example, open it up for 1 big file.
+        if len(drs_objects) == 1:
+            self.max_simultaneous_part_handlers = 50
+            self.part_size = 64 * MB
         return drs_objects

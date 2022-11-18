@@ -4,8 +4,12 @@ from pathlib import Path
 
 import aiofiles
 import aiohttp
+import logging
 
+from drs_downloader import MB
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
+
+logger = logging.getLogger(__name__)
 
 
 class TerraDrsClient(DrsClient):
@@ -33,16 +37,23 @@ class TerraDrsClient(DrsClient):
         return token
 
     async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Path:
+        try:
+            headers = {'Range': f'bytes={start}-{size}'}
 
-        headers = {'Range': f'bytes={start}-{size}'}
-        (fd, name,) = tempfile.mkstemp(prefix=f'{drs_object.name}.{start}.{size}.', suffix='.part',
-                                       dir=str(destination_path))
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(drs_object.access_methods[0].access_url) as request:
-                file = await aiofiles.open(name, 'wb')
-                self.statistics.set_max_files_open()
-                await file.write(await request.content.read())
-                return Path(name)
+            file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
+            async with aiohttp.ClientSession(headers=headers) as session:
+                async with session.get(drs_object.access_methods[0].access_url) as request:
+                    file = await aiofiles.open(file_name, 'wb')
+                    self.statistics.set_max_files_open()
+                    async for data in request.content.iter_any():  # uses less memory
+                        await file.write(data)
+                    # await file.write(await request.content.read())  # original
+                    await file.close()
+                    return Path(file_name)
+        except Exception as e:
+            logger.error(f"terra.download_part {str(e)}")
+            drs_object.errors.append(str(e))
+            return None
 
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object` """
