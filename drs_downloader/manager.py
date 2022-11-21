@@ -6,12 +6,14 @@ import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Iterator, Tuple
-
+import os
 import tqdm
 import tqdm.asyncio
+from urllib.parse import urlparse
+
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
-    DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS, DEFAULT_PART_SIZE, MB
+    DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS,DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS, DEFAULT_PART_SIZE, MB, GB
 
 from drs_downloader.models import DrsClient, DrsObject
 
@@ -94,7 +96,8 @@ class DrsAsyncManager(DrsManager):
                  part_size: int = DEFAULT_PART_SIZE,
                  max_simultaneous_object_retrievers=DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS,
                  max_simultaneous_downloaders=DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS,
-                 max_simultaneous_part_handlers=DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS):
+                 max_simultaneous_part_handlers=DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS,
+                 max_simultaneous_object_signers= DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS):
         """
 
         Args:
@@ -108,6 +111,7 @@ class DrsAsyncManager(DrsManager):
         # """Implements abstract constructor."""
         super().__init__(drs_client=drs_client)
         self.max_simultaneous_object_retrievers = max_simultaneous_object_retrievers
+        self.max_simultaneous_object_signers= max_simultaneous_object_signers
         self.max_simultaneous_downloaders = max_simultaneous_downloaders
         self.max_simultaneous_part_handlers = max_simultaneous_part_handlers
         self.disable = not show_progress
@@ -153,7 +157,7 @@ class DrsAsyncManager(DrsManager):
         for chunk_parts in \
                 tqdm.tqdm(DrsAsyncManager._chunker(parts, self.max_simultaneous_part_handlers),
                           total=math.ceil(len(parts)/self.max_simultaneous_part_handlers),
-                          desc="  * batch",
+                          desc= "File Download Progress",
                           leave=False,
                           disable=self.disable):
             chunk_tasks = []
@@ -166,7 +170,7 @@ class DrsAsyncManager(DrsManager):
                 await f
                 for f in
                 tqdm.tqdm(asyncio.as_completed(chunk_tasks), total=len(chunk_tasks), leave=False,
-                          desc=f"    * {drs_object.name}", disable=self.disable)
+                          desc=f"    * {drs_object.name} Part", disable=self.disable)
             ]
             # something bad happened
             if None in chunk_paths:
@@ -177,12 +181,22 @@ class DrsAsyncManager(DrsManager):
 
         drs_object.file_parts = paths
 
+        i = 1
+        filename = f"{drs_object.name}"
+        original_file_name = Path(filename)
+        while True:
+            if os.path.isfile(destination_path.joinpath(filename)):
+                filename = f"{original_file_name}({i})"
+                i = i + 1
+                continue
+            break
+
         # re-assemble and test the file parts
         # hash function dynamic
         checksum_type = drs_object.checksums[0].type
         assert checksum_type in hashlib.algorithms_available, f"Checksum {checksum_type} not supported."
         md5_hash = hashlib.new(checksum_type)
-        with open(destination_path.joinpath(drs_object.name), 'wb') as wfd:
+        with open(destination_path.joinpath(filename), 'wb') as wfd:
             # sort the items of the list in place - Numerically based on start i.e. "xxxxxx.start.end.part"
             drs_object.file_parts.sort(key=lambda x: int(str(x).split('.')[-3]))
             for f in drs_object.file_parts:
@@ -219,20 +233,20 @@ class DrsAsyncManager(DrsManager):
         """
 
         # first sign the urls
-        tasks = []
-        for drs_object in drs_objects:
-            task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object))
-            tasks.append(task)
+        #tasks = []
+        #for drs_object in drs_objects:
+            #task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object))
+            #tasks.append(task)
 
-        drs_objects_with_signed_urls = [
-            await f
-            for f in tqdm.tqdm(asyncio.as_completed(tasks), total=len(tasks), leave=leave, desc="  * signing",
-                               disable=self.disable)
-        ]
+        #drs_objects_with_signed_urls = [
+            #await f
+            #for f in tqdm.tqdm(asyncio.as_completed(tasks), total=len(tasks), leave=leave, desc="  * signing",
+                               #disable=self.disable)
+        #]
 
         # second, download the parts
         tasks = []
-        for drs_object in drs_objects_with_signed_urls:
+        for drs_object in drs_objects:
             task = asyncio.create_task(
                 self._run_download_parts(drs_object=drs_object, destination_path=destination_path))
             tasks.append(task)
@@ -286,7 +300,7 @@ class DrsAsyncManager(DrsManager):
 
         signed_urls = [
             await f
-            for f in tqdm.tqdm(asyncio.as_completed(tasks), total=len(tasks), leave=leave, desc="  * batch",
+            for f in tqdm.tqdm(asyncio.as_completed(tasks), total=len(tasks), leave=leave, desc="retrieving object information",
                                disable=self.disable)
         ]
 
@@ -316,18 +330,44 @@ class DrsAsyncManager(DrsManager):
 
         total_batches = len(object_ids) / self.max_simultaneous_object_retrievers
         # if fractional
-        if total_batches - round(total_batches) > 0:
+        #if total_batches - round(total_batches) > 0:
+        # this would imply that if batch count is 9.3 and you round down the last .3 is never 
+        # actually downloaded since there are only 9 batches. math.ciel would round up if there is a decimal at all
+        if (math.ceil(total_batches) - total_batches  >  0):
             total_batches += 1
+            total_batches = int(total_batches)
 
         current = 0
 
-        for chunk_of_object_ids in tqdm.tqdm(
-                DrsAsyncManager._chunker(object_ids, self.max_simultaneous_object_retrievers),
-                total=total_batches,
-                desc="repository", leave=False, disable=self.disable):
+        for chunk_of_object_ids in DrsAsyncManager._chunker(object_ids, self.max_simultaneous_object_retrievers):
 
             drs_objects.extend(
                 asyncio.run(self._run_get_objects(object_ids=chunk_of_object_ids, leave=(current == total_batches))))
+            current += 1
+
+        return drs_objects
+
+
+    def get_signed_urls(self, object_ids: List[str]) -> List[DrsObject]:
+        """Create tasks for all object_ids, run them in batches, get information about the object.
+
+        Args:
+            object_ids: list of objects to fetch
+        """
+
+        drs_objects = []
+
+        total_batches = len(object_ids) / self.max_simultaneous_object_signers
+        if (math.ceil(total_batches) - total_batches  >  0):
+            total_batches += 1
+            total_batches= int(total_batches)
+
+        current = 0
+
+        for chunk_of_object_ids in DrsAsyncManager._chunker(object_ids, self.max_simultaneous_object_signers):
+
+            drs_objects.extend(
+                asyncio.run(self._run_sign_urls(drs_objects=chunk_of_object_ids, leave=(current == total_batches))))
             current += 1
 
         return drs_objects
@@ -345,17 +385,15 @@ class DrsAsyncManager(DrsManager):
         """
         total_batches = len(drs_objects) / self.max_simultaneous_downloaders
         # if fractional, add 1
-        if total_batches - round(total_batches) > 0:
+        if (math.ceil(total_batches) - total_batches  > 0):
             total_batches += 1
+            total_batches = int(total_batches)
 
         current = 0
         updated_drs_objects = []
 
-        for chunk_of_drs_objects in tqdm.tqdm(
-                DrsAsyncManager._chunker(drs_objects, self.max_simultaneous_object_retrievers),
-                total=total_batches,
-                desc="downloading", leave=False, disable=self.disable):
-
+        for chunk_of_drs_objects in DrsAsyncManager._chunker(drs_objects, self.max_simultaneous_object_retrievers):
+            #print("THE VALUE OF OF CHUNK OF DRS OBJEDTS ",chunk_of_drs_objects[0])
             completed_chunk = asyncio.run(self._run_download(drs_objects=chunk_of_drs_objects,
                                                              destination_path=destination_path,
                                                              leave=(current == total_batches)))
@@ -377,7 +415,25 @@ class DrsAsyncManager(DrsManager):
         # TODO - now that we have the objects to download, we have an opportunity to shape the downloads
         # TODO - e.g. smallest files first?  tweak MAX_* to optimize per workload
         # for example, open it up for 1 big file.
+
         if len(drs_objects) == 1:
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
+            self.max_simultaneous_downloaders= 10
+
+        elif any(drs_object.size > (1*GB) for drs_object in drs_objects):
+            self.max_simultaneous_part_handlers = 10
+            self.part_size = 10 * MB
+            self.max_simultaneous_downloaders= 10
+
+        elif all((drs_object.size < (5*MB)) for drs_object in drs_objects):
+            self.part_size = 5 * MB
+            self.max_simultaneous_part_handlers= 1
+            self.max_simultaneous_downloaders= 10
+
+        else:
+            self.part_size= 10 * MB
+            self.max_simultaneous_part_handlers = 10
+            self.max_simultaneous_downloaders = 10
+
         return drs_objects

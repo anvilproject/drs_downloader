@@ -57,7 +57,42 @@ class TerraDrsClient(DrsClient):
 
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object` """
-        return drs_object
+
+        data = {
+            "url": drs_object,
+            "fields": ["accessUrl","size"]
+        }
+        session = aiohttp.ClientSession(headers={
+            'authorization': 'Bearer ' + self.token,
+            'content-type': 'application/json'
+        })
+
+        async with session.post(url=self.endpoint, json=data) as response:
+            try:
+                self.statistics.set_max_files_open()
+                response.raise_for_status()
+                resp = await response.json(content_type=None)
+                assert 'accessUrl' in resp, resp
+                if resp['accessUrl'] is None:
+                    account_command = 'gcloud config get-value account'
+                    cmd = account_command.split(' ')
+                    account = subprocess.check_output(cmd).decode("ascii")
+                    raise Exception(
+                        f"A valid URL was not returned from the server.  Please check the access for {account}\n{resp}")
+                url_ = resp['accessUrl']['url']
+                size_ = resp['size']
+
+                return DrsObject(
+                    self_uri="",
+                    size=size_,
+                    checksums=[Checksum(checksum="", type='md5')],
+                    id="",
+                    name="",
+                    access_methods=[AccessMethod(access_url=url_, type='gs')]
+                )
+            finally:
+                await session.close()
+
 
     async def get_object(self, object_id: str) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
@@ -85,14 +120,7 @@ class TerraDrsClient(DrsClient):
                 self.statistics.set_max_files_open()
                 response.raise_for_status()
                 resp = await response.json(content_type=None)
-                assert 'accessUrl' in resp, resp
-                if resp['accessUrl'] is None:
-                    account_command = 'gcloud config get-value account'
-                    cmd = account_command.split(' ')
-                    account = subprocess.check_output(cmd).decode("ascii")
-                    raise Exception(
-                        f"A valid URL was not returned from the server.  Please check the access for {account}\n{resp}")
-                url_ = resp['accessUrl']['url']
+                
                 md5_ = resp['hashes']['md5']
                 size_ = resp['size']
                 name_ = resp['fileName']
@@ -102,7 +130,7 @@ class TerraDrsClient(DrsClient):
                     checksums=[Checksum(checksum=md5_, type='md5')],
                     id=object_id,
                     name=name_,
-                    access_methods=[AccessMethod(access_url=url_, type='gs')]
+                    access_methods=[AccessMethod(access_url="", type='gs')]
                 )
             finally:
                 await session.close()
