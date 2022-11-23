@@ -1,12 +1,12 @@
 import subprocess
-import tempfile
 from pathlib import Path
+import json
+from dataclasses import dataclass
 
 import aiofiles
 import aiohttp
 import logging
 
-from drs_downloader import MB
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
 logger = logging.getLogger(__name__)
@@ -22,19 +22,38 @@ class TerraDrsClient(DrsClient):
         self.endpoint = "https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3"
         self.token = self._get_auth_token()
 
-    @staticmethod
-    def _get_auth_token() -> str:
+    @dataclass
+    class GcloudInfo(object):
+        account: str
+        project: str
+
+    def _get_auth_token(self) -> str:
         """Get Google Cloud authentication token.
         User must run 'gcloud auth login' from the shell before starting this script.
 
         Returns:
             str: auth token
         """
+        gcloud_info = self._get_gcloud_info()
+        if (gcloud_info.account is None):
+            raise Exception("No Google Cloud account found.")
+
         token_command = "gcloud auth print-access-token"
         cmd = token_command.split(' ')
         token = subprocess.check_output(cmd).decode("ascii")[0:-1]
         assert token, "No token retrieved."
         return token
+
+    def _get_gcloud_info(self) -> GcloudInfo:
+        login_command = "gcloud info --format=json"
+        cmd = login_command.split(' ')
+        output = subprocess.check_output(cmd)
+        js = json.loads(output)
+        account = js['config']['account']
+        project = js['config']['project']
+
+        gcloud_info = self.GcloudInfo(account, project)
+        return gcloud_info
 
     async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Path:
         try:
@@ -60,7 +79,7 @@ class TerraDrsClient(DrsClient):
 
         data = {
             "url": drs_object,
-            "fields": ["accessUrl","size"]
+            "fields": ["accessUrl", "size"]
         }
         session = aiohttp.ClientSession(headers={
             'authorization': 'Bearer ' + self.token,
@@ -93,7 +112,6 @@ class TerraDrsClient(DrsClient):
             finally:
                 await session.close()
 
-
     async def get_object(self, object_id: str) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
 
@@ -120,7 +138,7 @@ class TerraDrsClient(DrsClient):
                 self.statistics.set_max_files_open()
                 response.raise_for_status()
                 resp = await response.json(content_type=None)
-                
+
                 md5_ = resp['hashes']['md5']
                 size_ = resp['size']
                 name_ = resp['fileName']

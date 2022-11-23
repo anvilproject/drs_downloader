@@ -1,4 +1,4 @@
-# DRS Downloader
+# DRS Downloader <!-- omit from toc -->
 
 [![DRS Downloader][build-badge]][build-link]
 
@@ -11,13 +11,12 @@ A file download tool for AnVIL/TDR data identified by DRS URIs and Google
 - [Usage](#usage)
   - [Quick Start](#quick-start)
   - [Example](#example)
-  - [Large Files](#large-files)
   - [Additional Options](#additional-options)
 - [Development](#development)
+  - [Tests](#tests)
 - [Authentication](#authentication)
 - [Credits](#credits)
 - [Contributing](#contributing)
-- [Tests](#tests)
 - [Project layout](#project-layout)
 
 ## Installation
@@ -29,7 +28,7 @@ Download the latest `drs_downloader` zip file for your operating system from the
 ### Quick Start
 
 ```sh
-drs_downloader --tsv <input TSV file> --dest <download destination>
+drs_downloader terra -m <manifest file> -d <destination directory>
 ```
 
 ### Example
@@ -37,12 +36,20 @@ drs_downloader --tsv <input TSV file> --dest <download destination>
 The below command is a basic example of how to structure a download command with all of the required arguments:
 
 ```sh
-$ drs_downloader --tsv tests/terra-data.tsv --dest ./DATA
-Welcome to the DRS Downloader!
-
-Beginning download to DATA
+$ drs_downloader terra -m tests/fixtures/terra-data.tsv -d DATA
 100%|████████████████████████████████| 10/10 [00:00<00:00, 56148.65it/s]
-Downloading complete!
+
+2022-11-21 16:56:49,595 ('HG03873.final.cram.crai', 'OK', 1351946, 1)
+2022-11-21 16:56:49,595 ('HG04209.final.cram.crai', 'OK', 1338980, 1)
+2022-11-21 16:56:49,595 ('HG02142.final.cram.crai', 'OK', 1405543, 1)
+2022-11-21 16:56:49,595 ('HG01552.final.cram.crai', 'OK', 1296198, 1)
+2022-11-21 16:56:49,595 ('NA18613.final.cram.crai', 'OK', 1370106, 1)
+2022-11-21 16:56:49,595 ('HG00536.final.cram.crai', 'OK', 1244278, 1)
+2022-11-21 16:56:49,595 ('HG02450.final.cram.crai', 'OK', 1405458, 1)
+2022-11-21 16:56:49,595 ('NA20525.final.cram.crai', 'OK', 1337382, 1)
+2022-11-21 16:56:49,595 ('NA20356.final.cram.crai', 'OK', 1368064, 1)
+2022-11-21 16:56:49,595 ('HG00622.final.cram.crai', 'OK', 1254920, 1)
+2022-11-21 16:56:49,595 ('done', 'statistics.max_files_open', 37) 
 
 $ ls ./DATA
 HG00536.final.cram.crai HG01552.final.cram.crai
@@ -52,51 +59,25 @@ HG02142.final.cram.crai HG03873.final.cram.crai
 NA18613.final.cram.crai NA20525.final.cram.crai
 ```
 
-This assumes that your TSV tests file is in the `tests` folder and that your destination folder is `DATA`.
-
-Additionally there are also optional `--maxsigners` `--maxdownloaders` `--maxparts` flags that are very useful for adjusting downloads of small or large files.
-
-### Large Files
-
-If you are downloading multiple large files and you want to see the progress in more parts you could run the command:
-
-```sh
-drs_downloader --tsv tests/terra-data.tsv --dest ./DATA --parts 20
-```
-
 ### Additional Options
 
 To see all available flags run the `help` command:
 
 ```sh
-drs_downloader --help
+drs_downloader terra --help
 ```
 
 ```sh
-Usage: main.py [OPTIONS]
+Usage: drs_download terra [OPTIONS]
+
+  Copy files from terra.bio
 
 Options:
-  --tsv TEXT             The input TSV file. Example: terra-data.tsv
-  --header TEXT          The column header in the TSV file associated with the
-                         DRS URIs. Example: pfb:ga4gh_drs_uri
-  --dest TEXT            The file path of the output file to download to.
-                         Relative or Absolute. Example: /tmp/DATA
-  --signers INTEGER      The maximum number of files to be signed at a time.
-                         If you are downloading files in the GB this number
-                         should be the same as downloaders flag. If this
-                         variable is different than downloaders, you will run
-                         into errors with files that take longer to download
-                         than 15 minutes  [default: 10]
-  --downloaders INTEGER  The maximum number of files to be downloaded at a
-                         time. If you are downloading files in the GB this
-                         number should be the same  as signers flag  [default:
-                         10]
-  --parts INTEGER        The maximum number of pieces a file should be divided
-                         into to show progress. GB sized files should have >20
-                         parts MB sized files can have only one part.
-                         [default: 10]
-  -v, --verbose          Enable downloading and debugging output
-  --help                 Show this message and exit.
+  -s, --silent                Display nothing.
+  -d, --destination_dir TEXT  Destination directory.  [default: /tmp/testing]
+  -m, --manifest_path TEXT    Path to manifest tsv.  [default:
+                              tests/fixtures/terra-data.tsv]
+  --help                      Show this message and exit.
 ```
 ## Development
 
@@ -115,10 +96,14 @@ python3.9 -m venv venv
 pip install -r requirements.txt -r requirements-dev.txt
 ```
 
-Now you should be ready to start coding and testing! Tests are run through the `pytest` program:
+Now you should be ready to start coding and testing!
+
+### Tests
+
+All tests and test files are stored in the `tests` directory. Pytest is used as the testing framework. To run all tests with a coverage report run `pytest` with the `--cov=tests` flag:
 
 ```sh
-$ pytest
+$ pytest --cov=tests
 
 ========================= test session starts =========================
 platform darwin -- Python 3.9.4, pytest-7.2.0, pluggy-1.0.0
@@ -126,21 +111,31 @@ rootdir: /Users/beckmanl/code/drs_downloader, configfile: pyproject.toml
 plugins: cov-4.0.0, anyio-3.6.2
 collected 4 items
 
-tests/test_main.py ...                                            [ 75%]
+tests/unit/test_main.py ...                                       [ 75%]
 tests/unit/test_basic_cli.py .                                    [100%]
+
+---------- coverage: platform darwin, python 3.9.4-final-0 -----------
+Name                           Stmts   Miss  Cover
+--------------------------------------------------
+tests/unit/test_main.py                41      0   100%
+tests/unit/test_basic_cli.py       3      0   100%
+--------------------------------------------------
+TOTAL                             44      0   100%
+
 
 ========================== 4 passed in 14.68s ==========================
 ```
 
 ## Authentication
 
-In order to get the downloader to work, you need to install Google gcloud CLI on your local machine. https://cloud.google.com/sdk/docs/install
+In order to get the downloader to work, you will need to install Google gcloud CLI on your local machine. https://cloud.google.com/sdk/docs/install
 
-Next, you must connect the google account that your Terra account connected to to g cloud. This is done with gcloud auth login:
+Next, you must connect the google account that your Terra account connected to gcloud. This is done with gcloud auth login:
 
 ```sh
 gcloud auth login
 ```
+
 You need to have a terra project that is set up for billing. Once you get one, go to your terra workspaces page: https://anvil.terra.bio/#workspaces/
 
 Click on the project that you want to bill to. On the righthand corner of the screen click on Cloud Information heading.
@@ -184,32 +179,6 @@ This project is developed in partnership between The AnVIL Project, the Broad In
 
 Pull requests, issues, and feature requests welcome. See the Development section how to set up the development environment.
 
-## Tests
-
-All tests and test files are stored in the `tests` directory. Pytest is used as the testing framework. To run all tests with a coverage report run `pytest` with the `--cov=tests` flag:
-
-```sh
-$ pytest --cov=tests
-
-========================= test session starts =========================
-platform darwin -- Python 3.9.4, pytest-7.2.0, pluggy-1.0.0
-rootdir: /Users/beckmanl/code/drs_downloader, configfile: pyproject.toml
-plugins: cov-4.0.0, anyio-3.6.2
-collected 4 items
-
-tests/unit/test_main.py ...                                            [ 75%]
-tests/unit/test_basic_cli.py .                                    [100%]
-
----------- coverage: platform darwin, python 3.9.4-final-0 -----------
-Name                           Stmts   Miss  Cover
---------------------------------------------------
-tests/unit/test_main.py                41      0   100%
-tests/unit/test_basic_cli.py       3      0   100%
---------------------------------------------------
-TOTAL                             44      0   100%
-
-========================== 4 passed in 14.68s ==========================
-```
 
 ## Project layout
 
@@ -217,48 +186,17 @@ TOTAL                             44      0   100%
 ┌── LICENSE
 ├── README.md
 ├── docs
-│   └── index.md          # The documentation homepage
-├── drs_downloader        # Source directory
-│   ├── __init__.py
-│   ├── download.py       # Asynchronous file downloader used by main.py
-│   └── main.py           # Terra DRS downloader
-├── mkdocs.yml            # MkDocs configuration file
-├── requirements-dev.txt  # Required packages for development
-├── requirements.txt      # Required packages for installation
-├── setup.py              # Setuptools file, used by Pyinstaller and pip
-└── tests                 # All Python test and TSV files fo here
-    ├── no-header.tsv
-    ├── terra-data.tsv
-    ├── terra-large-files.tsv
-    ├── terra-small-files.tsv
-    └── test_main.py
- ```
-
-┌── LICENSE
-├── README.md
-├── docs
-│   ├── index.md
+│   ├── index.md         # The documentation homepage
 │   └── mkdocs.yml
-├── drs_downloader
-│   ├── __init__.py
-│   ├── __pycache__
-│   ├── cli.py
+├── drs_downloader       # Source directory
 │   ├── clients
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   ├── mock.py
-│   │   └── terra.py
 │   ├── manager.py
 │   └── models.py
-├── mkdocs.yml
-├── requirements-dev.txt
-├── requirements.txt
-├── setup.py
+├── requirements-dev.txt # Installation dependencies
+├── requirements.txt     # Development dependencies
+├── setup.py             # Setuptools file, used by Pyinstaller and pip
 └── tests
-    ├── __pycache__
-    ├── fixtures
-    │   └── terra-data.tsv
-    └── unit
-        ├── __pycache__
-        └── test_basic_cli.py
-```
+    ├── fixtures         # Test manifest files
+    └── unit             # Unit tests
+ ```
+ 
