@@ -67,7 +67,6 @@ jobs:
       matrix:
         os: ["macos-latest", "ubuntu-latest", "windows-latest"]
     steps:
-      - run: echo github.ref
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
@@ -91,3 +90,21 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: drs-downloader-${{ runner.os }}.zip
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: robinraju/release-downloader@v1.6
+        with:
+          latest: true
+          fileName: "*"
+
+      - name: Create checksums
+        shell: bash
+        run: sha256sum drs-downloader-*.zip > checksums.txt
+
+      - name: Upload checksums
+        uses: softprops/action-gh-release@v1
+        with:
+          files: checksums.txt

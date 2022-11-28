@@ -5,9 +5,12 @@
 [build-badge]: https://github.com/anvilproject/drs_downloader/actions/workflows/build.yml/badge.svg
 [build-link]: https://github.com/anvilproject/drs_downloader/actions/workflows/build.yml
 
-A file download tool for AnVIL/TDR data identified by DRS URIs and Google
+A file download tool for AnVIL/TDR data identified by DRS URIs
 
 - [Installation](#installation)
+  - [Checksums](#checksums)
+    - [Successful Verification](#successful-verification)
+    - [Unsuccessful Verification](#unsuccessful-verification)
 - [Usage](#usage)
   - [Quick Start](#quick-start)
   - [Example](#example)
@@ -22,6 +25,37 @@ A file download tool for AnVIL/TDR data identified by DRS URIs and Google
 ## Installation
 
 Download the latest `drs_downloader` zip file for your operating system from the [releases](https://github.com/anvilproject/drs_downloader/releases/latest) page. Unzip the downloaded file and run the `drs_downloader` executable from the command line.
+
+### Checksums
+
+Checksums for the zip files are provided in `checksums.txt` from the [releases](https://github.com/anvilproject/drs_downloader/releases/latest) page. 
+
+<details>
+  <summary>Checksum instructions</summary>
+
+#### Successful Verification
+
+To verify the integrity of the binaries on macOS run the following:
+
+```sh
+$ shasum -c checksums.txt --ignore-missing
+drs-downloader-macOS.zip: OK
+```
+
+If the `shasum` command outputs `OK` than the verification was successful. 
+
+#### Unsuccessful Verification
+
+Alternatively if the commad outputs `FAILED` than the checksum did not match and the binary should not be run. In such a case please reach out to the contributors for assistance.
+
+```sh
+$ shasum -c checksums.txt --ignore-missing
+drs-downloader-macOS.zip: FAILED
+shasum: WARNING: 1 computed checksum did NOT match
+shasum: checksums.txt: no file was verified
+```
+
+</details>
 
 ## Usage
 
@@ -169,7 +203,6 @@ curl --request POST  --url https://us-central1-broad-dsde-prod.cloudfunctions.ne
 ```
 
 If you can run the above command with your own drs URI than you are setup to run the command line tool.
-
 
 ## Credits
 
