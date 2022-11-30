@@ -30,9 +30,6 @@ Download the latest `drs_downloader` zip file for your operating system from the
 
 Checksums for the zip files are provided in `checksums.txt` from the [releases](https://github.com/anvilproject/drs_downloader/releases/latest) page. 
 
-<details>
-  <summary>Checksum instructions</summary>
-
 #### Successful Verification
 
 To verify the integrity of the binaries on macOS run the following:
@@ -54,8 +51,6 @@ drs-downloader-macOS.zip: FAILED
 shasum: WARNING: 1 computed checksum did NOT match
 shasum: checksums.txt: no file was verified
 ```
-
-</details>
 
 ## Usage
 

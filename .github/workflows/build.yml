@@ -56,7 +56,7 @@ jobs:
           flake8 . --count --statistics
 
       - name: Test with pytest
-        run: pytest --cov=drs_downloader -k 'not test_terra'
+        run: pytest --cov=drs_downloader -m "not auth"
 
   build:
     if: startsWith(github.ref, 'refs/tags/')

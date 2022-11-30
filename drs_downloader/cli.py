@@ -1,17 +1,18 @@
-import logging
-import uuid
 from pathlib import Path
 from typing import List
-import math
-import tqdm
 import click
 import csv
+import logging
+import math
+import tqdm
+import uuid
 
 from drs_downloader.clients.mock import MockDrsClient
 from drs_downloader.clients.terra import TerraDrsClient
 from drs_downloader.manager import DrsAsyncManager
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
+from drs_downloader.models import DrsObject
 
 # logging.basicConfig(format='%(asctime)s %(message)s',  encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)  # these control our simulation
@@ -19,6 +20,7 @@ NUMBER_OF_OBJECT_IDS = 10
 
 
 @click.group()
+@click.version_option()
 def cli():
     """Copy DRS objects from the cloud to your local system ."""
     pass
@@ -53,28 +55,14 @@ def mock(silent: bool, destination_dir: str):
     drs_objects = drs_manager.download(drs_objects, destination_dir)
 
     # show results
-    if not silent:
-        for drs_object in drs_objects:
-            if len(drs_object.errors) > 0:
-                logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-            else:
-                logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
-        logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
-
-    for drs_object in drs_objects:
-        at_least_one_error = False
-        if len(drs_object.errors) > 0:
-            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-            at_least_one_error = True
-    if at_least_one_error:
-        exit(99)
+    _show_results(drs_objects, silent, drs_client.statistics.max_files_open)
 
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
 @click.option("--destination_dir", "-d", show_default=True,
               default="/tmp/testing", help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True, default='tests/fixtures/terra-data.tsv',
+@click.option("--manifest_path", "-m", show_default=True, default='tests/fixtures/manifests/terra-data.tsv',
               help="Path to manifest tsv.")
 @click.option('--drs_header', default=None, help='The column header in the TSV file associated with the DRS URIs.'
               'Example: pfb:ga4gh_drs_uri')
@@ -95,10 +83,12 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
 
     # read from manifest
     # print("THE VALUE OF MANIFEST PATH", manifest_path)
-    ids_from_manifest = _extract_tsv_info(manifest_path, drs_header)
+    ids_from_manifest = _extract_manifest_info(manifest_path, drs_header)
 
     drs_objects = drs_manager.get_objects(ids_from_manifest)
     drs_objects.sort(key=lambda x: x.size, reverse=False)
+
+    # ids_from_manifest = drs_manager.check_existing_files(ids_from_manifest)
 
     # print("THE VALUE OF DRS OBJECTS ", drs_objects[0])
     total_batches = len(ids_from_manifest) / DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
@@ -116,7 +106,7 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
             total=total_batches,
             desc="TOTAL_DOWNLOAD_PROGRESS", leave=True):
 
-        # for some reason the objectgs don't stay sorted so you need to sort them
+        # for some reason the objects don't stay sorted so you need to sort them
         # here to make sure that the right files are matching up
         drs_objects_sign = drs_manager.get_signed_urls(chunk_of_object_ids)
         drs_objects_sign.sort(key=lambda x: x.size, reverse=False)
@@ -137,27 +127,15 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
         start = start + 1
 
         # show results
-        if not silent:
-            for drs_object in drs_objects:
-                if len(drs_object.errors) > 0:
-                    logger.error(
-                        (drs_object.name, 'ERROR', drs_object.size, len(
-                            drs_object.file_parts), drs_object.errors))
-                else:
-                    pass
-                    logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
-            logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
-
-        for drs_object in drs_objects:
-            at_least_one_error = False
-            if len(drs_object.errors) > 0:
-                logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-                at_least_one_error = True
-        if at_least_one_error:
-            exit(99)
+        _show_results(drs_objects, silent, drs_client.statistics.max_files_open)
 
 
-def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
+@cli.command()
+def upgrade():
+    """Upgrade the executable"""
+
+
+def _extract_manifest_info(manifest_path: Path, drs_header: str) -> List[str]:
     """Extract the DRS URI's from the provided TSV file.
 
     Args:
@@ -196,7 +174,7 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
         else:
             raise KeyError(
                 "Key format for drs_uri is bad. Make sure the column that contains the URIS has 'uri' somewhere in it,"
-                "   or the URI header matches the uri header name in the TSV file that was specified")
+                "or the URI header matches the uri header name in the TSV file that was specified")
 
         for url in uris:
             if ('/' in url):
@@ -205,6 +183,24 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
                 raise Exception(
                     "Check that your header name for your DRS URIS is directly above the column of your DRS URIS")
     return uris
+
+
+def _show_results(drs_objects: List[DrsObject], silent: bool, max_files_open: int):
+    if not silent:
+        for drs_object in drs_objects:
+            if len(drs_object.errors) > 0:
+                logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+            else:
+                logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
+        logger.info(('done', 'statistics.max_files_open', max_files_open))
+
+    for drs_object in drs_objects:
+        at_least_one_error = False
+        if len(drs_object.errors) > 0:
+            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+            at_least_one_error = True
+    if at_least_one_error:
+        exit(99)
 
 
 if __name__ == "__main__":

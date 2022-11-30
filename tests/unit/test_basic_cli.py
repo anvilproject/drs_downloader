@@ -1,6 +1,7 @@
 import os.path
 from click.testing import CliRunner
 from drs_downloader.cli import cli
+import pytest
 
 
 def test_license():
@@ -15,6 +16,7 @@ def test_mock():
     assert result.exit_code == 0
 
 
+@pytest.mark.auth
 def test_terra():
     """The terra command should execute without error."""
     runner = CliRunner()
