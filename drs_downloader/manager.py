@@ -161,6 +161,14 @@ class DrsAsyncManager(DrsManager):
                           disable=self.disable):
             chunk_tasks = []
             for start, size in chunk_parts:
+                # TODO: Check if part file exists and if so verify the expected size.
+                # If size matches the expected value then return the Path of the file_name for eventual reassembly.
+                # If size does not match then attempt to restart the download.
+                file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
+                file_path = Path(file_name)
+                if (self.check_existing_parts(file_path, start, size)):
+                    continue
+
                 task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
                                                                           destination_path=destination_path))
                 chunk_tasks.append(task)
@@ -381,6 +389,10 @@ class DrsAsyncManager(DrsManager):
             DrsObjects updated with _file_parts
 
         """
+        # TODO: Check the download destination for existing downloads for the DRS Objects.
+        # If a DRS object has already been downloaded successfully then remove it from the list.
+        drs_objects = self.check_existing_files(drs_objects, destination_path)
+
         total_batches = len(drs_objects) / self.max_simultaneous_downloaders
         # if fractional, add 1
         if (math.ceil(total_batches) - total_batches > 0):
@@ -392,6 +404,7 @@ class DrsAsyncManager(DrsManager):
 
         for chunk_of_drs_objects in DrsAsyncManager._chunker(drs_objects, self.max_simultaneous_object_retrievers):
             # print("THE VALUE OF OF CHUNK OF DRS OBJEDTS ",chunk_of_drs_objects[0])
+
             completed_chunk = asyncio.run(self._run_download(drs_objects=chunk_of_drs_objects,
                                                              destination_path=destination_path,
                                                              leave=(current == total_batches)))
@@ -435,3 +448,40 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_downloaders = 10
 
         return drs_objects
+
+    def check_existing_files(self, drs_objects: List[DrsObject], destination_path: Path) -> List[DrsObject]:
+        """For all files listed in the manifest check if they already exist in the destination directory.
+
+        Args:
+            drs_objects (List[DrsObject]): The DRS objects from the manifest (some may already be downloaded)
+            destination_path (Path): Download destination that may contain partially downloaded files
+
+        Returns:
+            List[DrsObject]: A filtered list of DRS Objects that have not yet been downloaded
+        """        
+        
+        hashes = []
+        for direntry in os.scandir(destination_path):
+            if direntry.is_dir():
+                continue
+            
+            with open(direntry.path, mode='rb') as file:
+                data = file.read()
+                hash = hashlib.md5(data).hexdigest()
+                hashes.append(hash)
+        
+        filtered_objects = []
+        for drs_object in drs_objects:
+            hash = drs_object.checksums[0].checksum
+            if hash not in hashes:
+                filtered_objects.append(drs_object)
+                
+        return filtered_objects
+
+
+    def check_existing_parts(self, file_path: Path, start: int, size: int) -> bool:
+        if (not file_path.exists()):
+            return False
+
+        expected_size = size - start
+        return file_path.stat().st_size == expected_size
