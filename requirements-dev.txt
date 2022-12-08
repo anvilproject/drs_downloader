@@ -3,3 +3,8 @@ pytest==7.1.3
 flake8
 pyinstaller
 pytest-cov
+mkdocs-section-index
+mkdocs-gen-files
+mkdocs-material
+mkdocstrings[python]
+mkdocs-section-index
