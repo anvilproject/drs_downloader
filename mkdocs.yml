@@ -14,7 +14,6 @@ plugins:
   - gen-files:
       scripts:
         - docs/gen_ref_pages.py
-  - section-index
   - mkdocstrings
   
 theme:
@@ -32,3 +31,5 @@ theme:
     toggle:
       icon: material/weather-night
       name: Switch to light mode
+
+use_directory_urls: false
