@@ -13,10 +13,3 @@ def test_mock():
     runner = CliRunner()
     result = runner.invoke(cli, ['mock'])
     assert result.exit_code == 0
-
-
-def test_terra():
-    """The terra command should execute without error."""
-    runner = CliRunner()
-    result = runner.invoke(cli, ['terra'])
-    assert result.exit_code == 0

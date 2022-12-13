@@ -1,24 +1,12 @@
-from click.testing import CliRunner
-from drs_downloader.cli import _extract_tsv_info, cli
-import os
+from pathlib import Path
+
 import pytest
-import tempfile
 
-
-def test_terra():
-    with tempfile.TemporaryDirectory() as dest:
-        runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest])
-        assert result.exit_code == 0
-
-        files = sorted(next(os.walk(dest))[2])
-        assert len(files) == 10
-        assert files[0] == "HG00536.final.cram.crai"
-        assert files[9] == "NA20525.final.cram.crai"
+from drs_downloader.cli import _extract_tsv_info
 
 
 def test_extract_tsv_info():
-    tsv_path = "tests/fixtures/terra-data.tsv"
+    tsv_path = Path("tests/fixtures/terra-data.tsv")
     drs_header = "pfb:ga4gh_drs_uri"
     expected_len = 10
     expected_first = "drs://dg.4503:dg.4503/15fdd543-9875-4edf-8bc2-22985473dab6"
@@ -42,8 +30,8 @@ def test_extract_tsv_info():
 
     # No header found in TSV file
     with pytest.raises(KeyError):
-        _extract_tsv_info("tests/fixtures/no-header.tsv", None)
+        _extract_tsv_info(Path("tests/fixtures/no-header.tsv"), None)
 
     # No header found in TSV file despite user passing in header value
     with pytest.raises(KeyError):
-        _extract_tsv_info("tests/fixtures/no-header.tsv", drs_header)
+        _extract_tsv_info(Path("tests/fixtures/no-header.tsv"), drs_header)

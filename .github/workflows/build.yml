@@ -55,8 +55,11 @@ jobs:
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --statistics
 
-      - name: Test with pytest
-        run: pytest --cov=drs_downloader -k 'not test_terra'
+      - name: Unit tests (No server dependencies) with pytest
+        run: pytest tests/unit --cov=drs_downloader --cov-report term-missing
+
+#      - name: Unit and Integration tests with pytest
+#        run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
 
   build:
     if: startsWith(github.ref, 'refs/tags/')
