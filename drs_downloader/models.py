@@ -4,7 +4,7 @@ import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 @dataclass
@@ -90,7 +90,15 @@ class DrsClient(ABC):
         self.statistics = statistics
 
     @abstractmethod
-    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Path:
+    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
+        """Download and save part of a file to disk; on error, update drs_object.errors return None
+
+        Args:
+            destination_path: where to save the part
+            drs_object: state of download
+            start: segment start
+            size: segment end
+        """
         pass
 
     @abstractmethod
@@ -107,4 +115,5 @@ class DrsClient(ABC):
 
     @abstractmethod
     async def get_object(self, object_id: str) -> DrsObject:
+        """Retrieve size, checksums, etc. populate DrsObject."""
         pass

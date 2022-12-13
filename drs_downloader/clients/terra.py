@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 import json
 from dataclasses import dataclass
+from typing import Optional
 
 import aiofiles
 import aiohttp
@@ -35,7 +36,7 @@ class TerraDrsClient(DrsClient):
             str: auth token
         """
         gcloud_info = self._get_gcloud_info()
-        if (gcloud_info.account is None):
+        if gcloud_info.account is None:
             raise Exception("No Google Cloud account found.")
 
         token_command = "gcloud auth print-access-token"
@@ -55,7 +56,7 @@ class TerraDrsClient(DrsClient):
         gcloud_info = self.GcloudInfo(account, project)
         return gcloud_info
 
-    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Path:
+    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
         try:
             headers = {'Range': f'bytes={start}-{size}'}
 
@@ -66,7 +67,6 @@ class TerraDrsClient(DrsClient):
                     self.statistics.set_max_files_open()
                     async for data in request.content.iter_any():  # uses less memory
                         await file.write(data)
-                    # await file.write(await request.content.read())  # original
                     await file.close()
                     return Path(file_name)
         except Exception as e:
@@ -77,9 +77,11 @@ class TerraDrsClient(DrsClient):
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object` """
 
+        assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
+
         data = {
-            "url": drs_object,
-            "fields": ["accessUrl", "size"]
+            "url": drs_object.id,
+            "fields": ["accessUrl"]
         }
         session = aiohttp.ClientSession(headers={
             'authorization': 'Bearer ' + self.token,
@@ -99,16 +101,8 @@ class TerraDrsClient(DrsClient):
                     raise Exception(
                         f"A valid URL was not returned from the server.  Please check the access for {account}\n{resp}")
                 url_ = resp['accessUrl']['url']
-                size_ = resp['size']
-
-                return DrsObject(
-                    self_uri="",
-                    size=size_,
-                    checksums=[Checksum(checksum="", type='md5')],
-                    id="",
-                    name="",
-                    access_methods=[AccessMethod(access_url=url_, type='gs')]
-                )
+                drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
+                return drs_object
             finally:
                 await session.close()
 
