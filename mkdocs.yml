@@ -1,1 +1,35 @@
+# Documentation generator based on MkDocs
+# Automatically documents API references
+# References:
+#   https://www.mkdocs.org/
+#   https://mkdocstrings.github.io/recipes/
+
 site_name: AnVIL DRS Download Tool
+
+watch:
+- drs_downloader
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - mkdocstrings
+  
+theme:
+  name: "material"
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: black
+    accent: lime
+    toggle:
+      icon: material/weather-night
+      name: Switch to light mode
+
+use_directory_urls: false

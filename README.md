@@ -210,7 +210,7 @@ Pull requests, issues, and feature requests welcome. See the Development section
 
 ## Project layout
 
-```sh
+```
 ┌── LICENSE
 ├── README.md
 ├── docs
@@ -226,5 +226,5 @@ Pull requests, issues, and feature requests welcome. See the Development section
 └── tests
     ├── fixtures         # Test manifest files
     └── unit             # Unit tests
- ```
+```
  
