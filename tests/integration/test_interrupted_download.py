@@ -1,16 +1,19 @@
-from pathlib import Path
-from click.testing import CliRunner
-from drs_downloader.cli import cli
 import filecmp
 import os
-import pytest
 import shutil
 import tempfile
+from pathlib import Path
+
+import pytest
+from click.testing import CliRunner
+
+from drs_downloader.cli import cli
 
 
 @pytest.mark.auth
 def test_interrupted_download():
     """Tests recovering from an interrupted download.
+
     In the download destination there are:
         - 10 DRS objects in total over 12 downloaded files
         - 1 complete download
@@ -35,7 +38,17 @@ def test_interrupted_download():
         assert _are_dirs_equal(complete_dir, dest) is True
 
 
-def _are_dirs_equal(dir1, dir2):
+def _are_dirs_equal(dir1: str, dir2: str) -> bool:
+    """Compares all files between two directories
+
+    Args:
+        dir1 (str): The first directory to compare (e.g. "expected" values)
+        dir2 (str): The second directory to compare (e.g. "actual" values)
+
+    Returns:
+        bool: True if the directories contain the same files, False otherwise
+    """
+
     dir1_files = sorted(next(os.walk(dir1))[2])
     dir2_files = sorted(next(os.walk(dir2))[2])
     if len(dir1_files) != len(dir2_files):
