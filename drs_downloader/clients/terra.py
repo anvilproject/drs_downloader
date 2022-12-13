@@ -56,7 +56,8 @@ class TerraDrsClient(DrsClient):
         gcloud_info = self.GcloudInfo(account, project)
         return gcloud_info
 
-    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
+    async def download_part(self,
+                            drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
         try:
             headers = {'Range': f'bytes={start}-{size}'}
 

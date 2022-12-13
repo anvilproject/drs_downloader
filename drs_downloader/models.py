@@ -90,7 +90,8 @@ class DrsClient(ABC):
         self.statistics = statistics
 
     @abstractmethod
-    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
+    async def download_part(self,
+                            drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
         """Download and save part of a file to disk; on error, update drs_object.errors return None
 
         Args:

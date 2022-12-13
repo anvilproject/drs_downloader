@@ -120,10 +120,6 @@ class Gen3DrsClient(DrsClient):
         if not self.authorized:
             await self.authorize()
 
-        data = {
-            "url": object_id,
-            "fields": ["fileName", "size", "hashes", "accessUrl"]
-        }
         session = aiohttp.ClientSession(headers={
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
