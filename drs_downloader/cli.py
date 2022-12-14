@@ -28,13 +28,17 @@ def cli():
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
 @click.option("--destination_dir", "-d", show_default=True, default='/tmp/testing',
               help="Destination directory.")
-@click.option("--number_of_object_ids", "-d", show_default=True, default=10,
-              help="Simulated manifest.")
-def mock(silent: bool, destination_dir: str, number_of_object_ids):
+@click.option("--manifest_path", "-m", show_default=True,
+              help="Path to manifest tsv.")
+@click.option('--drs_header', default='ga4gh_drs_uri', show_default=True,
+              help='The column header in the TSV file associated with the DRS URIs.'
+                   'Example: pfb:ga4gh_drs_uri')
+def mock(silent: bool, destination_dir: str, manifest_path, drs_header):
     """Generate test files locally, without the need for server."""
 
-    # simulate read from manifest
-    ids_from_manifest = [str(uuid.uuid4()) for _ in range(number_of_object_ids)]
+    #
+    # get ids from manifest
+    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
 
     # perform downloads with a mock drs client
     _perform_downloads(destination_dir, MockDrsClient(), ids_from_manifest, silent)
@@ -111,11 +115,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
     # show results
     if not silent:
         for drs_object in drs_objects:
-            if len(drs_object.errors) > 0:
-                logger.error(
-                    (drs_object.name, 'ERROR', drs_object.size, len(
-                        drs_object.file_parts), drs_object.errors))
-            else:
+            if len(drs_object.errors) == 0:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 

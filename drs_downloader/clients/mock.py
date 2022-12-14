@@ -6,6 +6,7 @@ import tempfile
 import uuid
 from pathlib import Path
 import random
+from typing import Optional
 
 from drs_downloader import MB
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
@@ -14,13 +15,18 @@ logger = logging.getLogger(__name__)
 
 MAX_SIZE_OF_OBJECT = 50 * MB
 
+# special identifiers that will prompt failures
+INCORRECT_SIZE = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "INCORRECT_SIZE"))
+BAD_MD5 = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_MD5"))
+BAD_SIGNATURE = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_SIGNATURE"))
+
 
 class MockDrsClient(DrsClient):
     """Simulate responses from server.
 
     """
 
-    async def sign_url(self, drs_object: DrsObject) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject) -> Optional[DrsObject]:
         """Simulate url signing by waiting 1-3 seconds, return populated DrsObject
 
         Args:
@@ -29,6 +35,10 @@ class MockDrsClient(DrsClient):
         Returns:
             populated DrsObject
         """
+        # simulate a failed signature
+        if drs_object.id == BAD_SIGNATURE:
+            return None
+
         # here we sleep while the file is open and measure total files open
         fp = tempfile.TemporaryFile()
         sleep_duration = random.randint(1, 3)
@@ -111,14 +121,46 @@ class MockDrsClient(DrsClient):
         destination_dir.mkdir(parents=True, exist_ok=True)
         with open(Path(f'{destination_dir}/{name_}.golden'), 'wb') as f:
             f.write(lines)
+
+        checksum = Checksum(hashlib.new('md5', lines).hexdigest(), type='md5')
+
+        # simulate an incorrect MD5
+        if object_id == BAD_MD5:
+            checksum = Checksum(hashlib.new('md5', line).hexdigest(), type='md5')
+
+        # simulate an incorrect size
+        if object_id == INCORRECT_SIZE:
+            size_ += 1000
+
         return DrsObject(
             self_uri=f"drs://{object_id}",
             size=size_,
             # md5, etag, crc32c, trunc512, or sha1
-            checksums=[
-                Checksum(checksum=hashlib.new('md5', lines).hexdigest(),
-                         type='md5')
-            ],
+            checksums=[checksum],
             id=id_,
             name=name_,
         )
+
+
+# test helpers
+
+def manifest_all_ok(number_of_object_ids):
+    """Generate a test manifest, a tsv file with valid drs identifiers."""
+    ids_from_manifest = [str(uuid.uuid4()) for _ in range(number_of_object_ids)]
+    tsv_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
+    tsv_file.write('ga4gh_drs_uri\n')
+    for id_ in ids_from_manifest:
+        tsv_file.write(f'drs://{id_}\n')
+    tsv_file.close()
+    return tsv_file
+
+
+def manifest_bad_file_size():
+    """Generate a test manifest, a tsv file with 2 valid drs identifiers and one that will create an incorrect file."""
+    ids_from_manifest = ['drs://' + str(uuid.uuid4()), INCORRECT_SIZE, 'drs://' + str(uuid.uuid4())]
+    tsv_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
+    tsv_file.write('ga4gh_drs_uri\n')
+    for id_ in ids_from_manifest:
+        tsv_file.write(f'{id_}\n')
+    tsv_file.close()
+    return tsv_file
