@@ -209,13 +209,20 @@ class DrsAsyncManager(DrsManager):
                 wfd.flush()
         actual_checksum = checksum.hexdigest()
 
+        actual_size = os.stat(Path(destination_path.joinpath(filename))).st_size
+
         # compare calculated md5 vs expected
         expected_checksum = drs_object.checksums[0].checksum
         if expected_checksum != actual_checksum:
             msg = f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}"
             drs_object.errors.append(msg)
-            # if error leave parts in place for now
-        else:
+
+        if drs_object.size != actual_size:
+            msg = f"The actual size {actual_size} does not match expected size {drs_object.size}"
+            drs_object.errors.append(msg)
+
+        # if error leave parts in place for now
+        if len(drs_object.errors) == 0:
             # ok, so clean up file parts
             for f in drs_object.file_parts:
                 f.unlink()
@@ -245,9 +252,12 @@ class DrsAsyncManager(DrsManager):
         # second, download the parts
         tasks = []
         for drs_object in drs_objects_with_signed_urls:
-            task = asyncio.create_task(
-                self._run_download_parts(drs_object=drs_object, destination_path=destination_path))
-            tasks.append(task)
+            if len(drs_object.errors) == 0:
+                task = asyncio.create_task(
+                    self._run_download_parts(drs_object=drs_object, destination_path=destination_path))
+                tasks.append(task)
+            else:
+                logger.error(f"{drs_object.id} has errors, not attempting anything further")
 
         drs_objects_with_file_parts = [
             await f
