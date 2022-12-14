@@ -37,11 +37,11 @@ class Gen3DrsClient(DrsClient):
                 self.api_key = json.load(f)
             code = await self.update_access_token()
             if code == 401:
-                print('Invalid access token in {}'.format(full_key_path))
+                logger.error('Invalid access token in {}'.format(full_key_path))
                 self.api_key = None
             elif code != 200:
-                print('Error {} getting Access token for {}'.format(code, self.endpoint))
-                print('Using {}'.format(full_key_path))
+                logger.error('Error {} getting Access token for {}'.format(code, self.endpoint))
+                logger.error('Using {}'.format(full_key_path))
                 self.api_key = None
         except Exception as e:
             self.api_key = None
@@ -60,7 +60,7 @@ class Gen3DrsClient(DrsClient):
                 self.authorized = True
             else:
                 self.authorized = False
-            return response.status
+        return response.status
 
     async def download_part(self,
                             drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
