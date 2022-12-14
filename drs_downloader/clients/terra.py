@@ -8,6 +8,8 @@ import aiofiles
 import aiohttp
 import logging
 
+from aiohttp import ClientResponseError
+
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
 logger = logging.getLogger(__name__)
@@ -104,6 +106,9 @@ class TerraDrsClient(DrsClient):
                 url_ = resp['accessUrl']['url']
                 drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
                 return drs_object
+            except ClientResponseError as e:
+                drs_object.errors.append(str(e))
+                return drs_object
             finally:
                 await session.close()
 
@@ -144,6 +149,15 @@ class TerraDrsClient(DrsClient):
                     id=object_id,
                     name=name_,
                     access_methods=[AccessMethod(access_url="", type='gs')]
+                )
+            except ClientResponseError as e:
+                return DrsObject(
+                    self_uri=object_id,
+                    id=object_id,
+                    checksums=[],
+                    size=0,
+                    name=None,
+                    errors=[str(e)]
                 )
             finally:
                 await session.close()
