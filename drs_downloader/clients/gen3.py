@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import aiofiles
 import aiohttp
@@ -43,8 +44,8 @@ class Gen3DrsClient(DrsClient):
                 print('Using {}'.format(full_key_path))
                 self.api_key = None
         except Exception as e:
-            raise e
             self.api_key = None
+            raise e
 
     # Obtain an access_token using the provided Fence API key.
     # The client object will retain the access key for subsequent calls
@@ -61,7 +62,8 @@ class Gen3DrsClient(DrsClient):
                 self.authorized = False
             return response.status
 
-    async def download_part(self, drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Path:
+    async def download_part(self,
+                            drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
         try:
 
             if not self.authorized:
