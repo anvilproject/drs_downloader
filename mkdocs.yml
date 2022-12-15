@@ -9,6 +9,9 @@ site_name: AnVIL DRS Download Tool
 watch:
 - drs_downloader
 
+markdown_extensions:
+  - def_list
+
 plugins:
   - search
   - gen-files:
