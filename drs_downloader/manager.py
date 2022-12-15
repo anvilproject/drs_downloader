@@ -181,6 +181,10 @@ class DrsAsyncManager(DrsManager):
                 tqdm.tqdm(asyncio.as_completed(chunk_tasks), total=len(chunk_tasks), leave=False,
                           desc=f"    * {drs_object.name} Part", disable=self.disable)
             ]
+
+            if len(existing_chunks) > 0:
+                logger.info(f"{drs_object.name} had {len(existing_chunks)} existing parts.")
+
             chunk_paths.extend(existing_chunks)
             # something bad happened
             if None in chunk_paths:
@@ -343,9 +347,18 @@ class DrsAsyncManager(DrsManager):
 
         """
 
-        drs_objects = self.filter_existing_files(drs_objects, destination_path)
-        if (drs_objects is None):
-            return
+        # TODO: Same process download recovery (e.g. network outage while process is running).
+        filtered_objects = self.filter_existing_files(drs_objects, destination_path)
+        if len(filtered_objects) < len(drs_objects):
+            complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
+            for obj in complete_objects:
+                logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
+
+            if len(filtered_objects) == 0:
+                logger.info(f"All DRS objects already present in {destination_path}.")
+                return
+
+            drs_objects = filtered_objects
 
         total_batches = len(drs_objects) / self.max_simultaneous_downloaders
         # if fractional, add 1
@@ -376,6 +389,9 @@ class DrsAsyncManager(DrsManager):
         # Now that we have the objects to download, we have an opportunity to shape the downloads
         # e.g. are the smallest files first?  tweak MAX_* to optimize per workload
 
+        # TODO: If part sizes changed here, would this result in an error in test recovery?
+        # Test existing captured part if part size changes between runs, either by user or by optimizer.
+
         if len(drs_objects) == 1:
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
@@ -387,7 +403,7 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_downloaders = 10
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
-            self.part_size = 1 * MB
+            self.part_size = 5 * MB
             self.max_simultaneous_part_handlers = 1
             self.max_simultaneous_downloaders = 10
 
@@ -406,7 +422,7 @@ class DrsAsyncManager(DrsManager):
             destination_path (Path): Download destination that may contain partially downloaded files
 
         Returns:
-            List[DrsObject]: The DRS objects that have not been downloaded
+            List[DrsObject]: The DRS objects that have yet to be downloaded
         """
 
         filtered_objects = [drs for drs in drs_objects if drs.name not in os.listdir(destination_path)]

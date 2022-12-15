@@ -41,7 +41,11 @@ class TerraDrsClient(DrsClient):
 
         token_command = "gcloud auth print-access-token"
         cmd = token_command.split(' ')
-        token = subprocess.check_output(cmd).decode("ascii")[0:-1]
+        try:
+            token = subprocess.check_output(cmd).decode("ascii")[0:-1]
+        except FileNotFoundError:
+            logger.error("gcloud not found")
+            exit(99)
         assert token, "No token retrieved."
         return token
 

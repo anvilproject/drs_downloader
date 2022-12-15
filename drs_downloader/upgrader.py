@@ -8,9 +8,10 @@ from abc import ABC
 from pathlib import Path
 from zipfile import ZipFile
 
-import pkg_resources
 import requests
 from packaging import version
+
+from version import __version__
 
 logger = logging.getLogger(__name__)  # these control our simulation
 
@@ -21,11 +22,12 @@ class Upgrader(ABC):
         self.release_url = f'https://github.com/{release_path}'
         self.api_url = f'https://api.github.com/repos/{release_path}'
 
-    def upgrade(self, dest: str = os.getcwd()):
+    def upgrade(self, dest: str = os.getcwd(), force=False):
         """Upgrades the drs_downloader executable and backups the old version to drs_downloader.bak/
 
         Args:
             dest (str, optional): download destination. Defaults to os.getcwd().
+            force (bool, optional): forces upgrade even if version is up to date. Defaults to False.
 
         Raises:
             Exception: If the operating system can not be reliably determined
@@ -41,11 +43,12 @@ class Upgrader(ABC):
         # Upgrade if newer version is available
         json = requests.get(self.api_url).json()
         new_version = version.parse(json['tag_name'])
-        current_version = version.parse(pkg_resources.require("drs_downloader")[0].version)
+        current_version = version.parse(__version__)
 
         if (current_version >= new_version):
             logger.info('Latest version already installed')
-            return
+            if force is False:
+                return
 
         # Determine download url for operating system
         system = platform.system()
@@ -91,6 +94,7 @@ class Upgrader(ABC):
         Args:
             dest (str): download destination
         """
+
         name = 'drs_downloader'
         download_file = Path(dest, name)
         if (download_file.is_file() is False):

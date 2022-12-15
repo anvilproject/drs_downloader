@@ -1,21 +1,19 @@
-from pathlib import Path
 import tempfile
-import pytest
+from pathlib import Path
 
 from drs_downloader.upgrader import Upgrader
 
 
-@pytest.mark.auth
 def test_upgrader():
     with tempfile.TemporaryDirectory() as dest:
         upgrader = Upgrader()
-        upgrader.upgrade(dest)
+        upgrader.upgrade(dest, force=True)
 
         download_file = Path(dest, 'drs_downloader')
         assert download_file.is_file()
 
         upgrader = Upgrader()
-        upgrader.upgrade(dest)
+        upgrader.upgrade(dest, force=True)
         assert download_file.is_file()
 
         backup_dir = Path(dest, 'drs_downloader.bak')

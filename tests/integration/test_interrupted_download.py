@@ -1,29 +1,36 @@
 import filecmp
+import logging
 import os
 import shutil
 import tempfile
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
-from drs_downloader.cli import cli
+from drs_downloader.cli import _extract_tsv_info, cli
+from drs_downloader.clients.terra import TerraDrsClient
+from drs_downloader.manager import DrsAsyncManager
 
 
-@pytest.mark.auth
-def test_interrupted_download():
+def test_interrupted_download(caplog):
     """Tests recovering from an interrupted download.
 
-    In the download destination there are:
+    To simulate an incomplete download a drs_downloader process was terminated in the middle of downloading using
+    terra-data.tsv as the manifest file. The files in the destination were copied into the interrupted_download
+    directory within tests/fixtures.
+
+    In the interrupted download directory there are:
         - 10 DRS objects in total over 12 downloaded files
         - 1 complete download
         - 9 incomplete downloads
     """
+
+    caplog.set_level(logging.INFO)
     fixtures_dir = 'tests/fixtures'
     interrupted_dir = Path(fixtures_dir, 'interrupted_download')
     complete_dir = Path(fixtures_dir, 'complete_download')
     complete_files = sorted(next(os.walk(complete_dir))[2])
-    assert len(complete_files) == 10
+    assert len(complete_files) == 10  # asserting that the fixtures have the expected number of files
 
     with tempfile.TemporaryDirectory() as dest:
         for file in os.listdir(Path(interrupted_dir)):
@@ -32,10 +39,17 @@ def test_interrupted_download():
         assert _are_dirs_equal(complete_dir, dest) is False
 
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest])
+        result = runner.invoke(cli, ['terra', '-d', dest, '-m', 'tests/fixtures/terra-data.tsv'])
         assert result.exit_code == 0
 
         assert _are_dirs_equal(complete_dir, dest) is True
+        assert f"HG04209.final.cram.crai already exists in {dest}. Skipping download." in caplog.messages
+        assert "HG00536.final.cram.crai had 1 existing parts." in caplog.messages
+
+        # Run the downloader again in the destination directory to verify that all DRS objects are present
+        result = runner.invoke(cli, ['terra', '-d', dest, '-m', 'tests/fixtures/terra-data.tsv'])
+        assert result.exit_code == 0
+        assert f"All DRS objects already present in {dest}." in caplog.messages
 
 
 def _are_dirs_equal(dir1: str, dir2: str) -> bool:
@@ -65,3 +79,68 @@ def _are_dirs_equal(dir1: str, dir2: str) -> bool:
         return False
 
     return True
+
+
+def test_check_existing_files():
+    drs_manager, drs_objects = _get_drs_manager()
+
+    with tempfile.TemporaryDirectory() as dest:
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest)
+        assert len(filtered_objects) == len(drs_objects)
+
+        shutil.copy2("tests/fixtures/parts/HG00536.final.cram.crai", dest)
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest)
+        assert len(filtered_objects) == len(drs_objects) - 1
+
+
+def test_existing_parts():
+
+    complete_parts = [
+        'HG00536.final.cram.crai.0.1048576.part',
+        'HG00622.final.cram.crai.0.1048576.part',
+        'HG02450.final.cram.crai.0.1048576.part'
+    ]
+
+    incomplete_parts = [
+        'HG00536.final.cram.crai.1048577.1244278.part',
+        'HG01552.final.cram.crai.0.1048576.part',
+        'HG02142.final.cram.crai.0.1048576.part',
+        'HG02450.final.cram.crai.1048577.1405458.part',
+        'HG03873.final.cram.crai.0.1048576.part',
+        'NA18613.final.cram.crai.0.1048576.part',
+        'NA20356.final.cram.crai.0.1048576.part',
+        'NA20525.final.cram.crai.0.1048576.part'
+    ]
+
+    with tempfile.TemporaryDirectory() as dest:
+        for part in complete_parts:
+            assert _part_exists(part, dest) is True
+
+        for part in incomplete_parts:
+            assert _part_exists(part, dest) is False
+
+
+def _part_exists(part_file: str, dest: str) -> bool:
+    part_fixture = Path("tests/fixtures/interrupted_download", part_file)
+    shutil.copy2(part_fixture, dest)
+
+    start = int(part_fixture.name.split(".")[-3])
+    size = int(part_fixture.name.split(".")[-2])
+    drs_manager, _ = _get_drs_manager()
+
+    part_path = Path(dest, part_file)
+    return drs_manager.check_existing_parts(part_path, start, size)
+
+
+def _get_drs_manager():
+    tsv_path = "tests/fixtures/manifests/terra-data.tsv"
+    drs_header = "pfb:ga4gh_drs_uri"
+
+    # get a drs client
+    drs_client = TerraDrsClient()
+    # assign it to a manager
+    drs_manager = DrsAsyncManager(drs_client=drs_client)
+    ids_from_manifest = _extract_tsv_info(Path(tsv_path), drs_header)
+    drs_objects = drs_manager.get_objects(ids_from_manifest)
+    drs_objects.sort(key=lambda x: x.size, reverse=False)
+    return drs_manager, drs_objects

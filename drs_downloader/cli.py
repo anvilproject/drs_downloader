@@ -1,11 +1,11 @@
+import logging
+import uuid
 from pathlib import Path
 from typing import List
-import click
-import csv
-import logging
 import math
 import tqdm
-import uuid
+import click
+import csv
 
 from drs_downloader.clients.gen3 import Gen3DrsClient
 from drs_downloader.clients.mock import MockDrsClient
@@ -13,14 +13,12 @@ from drs_downloader.clients.terra import TerraDrsClient
 from drs_downloader.manager import DrsAsyncManager
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
-from drs_downloader.models import DrsObject
 
 logging.basicConfig(format='%(asctime)s %(message)s',  encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)  # these control our simulation
 
 
 @click.group()
-@click.version_option()
 def cli():
     """Copy DRS objects from the cloud to your local system ."""
     pass
@@ -130,11 +128,6 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
         exit(99)
 
 
-@cli.command()
-def upgrade():
-    """Upgrade the executable"""
-
-
 def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
     """Extract the DRS URI's from the provided TSV file.
 
@@ -176,7 +169,7 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
         else:
             raise KeyError(
                 "Key format for drs_uri is bad. Make sure the column that contains the URIS has 'uri' somewhere in it,"
-                "or the URI header matches the uri header name in the TSV file that was specified")
+                "   or the URI header matches the uri header name in the TSV file that was specified")
 
         for url in uris:
             if '/' in url:
@@ -185,24 +178,6 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
                 raise Exception(
                     "Check that your header name for your DRS URIS is directly above the column of your DRS URIS")
     return uris
-
-
-def _show_results(drs_objects: List[DrsObject], silent: bool, max_files_open: int):
-    if not silent:
-        for drs_object in drs_objects:
-            if len(drs_object.errors) > 0:
-                logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-            else:
-                logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
-        logger.info(('done', 'statistics.max_files_open', max_files_open))
-
-    for drs_object in drs_objects:
-        at_least_one_error = False
-        if len(drs_object.errors) > 0:
-            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-            at_least_one_error = True
-    if at_least_one_error:
-        exit(99)
 
 
 if __name__ == "__main__":
