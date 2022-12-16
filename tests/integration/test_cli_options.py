@@ -6,6 +6,14 @@ from click.testing import CliRunner
 from drs_downloader.cli import cli
 
 
+def test_duplicate_uris():
+     with tempfile.TemporaryDirectory() as dest:
+        runner = CliRunner()
+        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-data-duplicates.tsv'])
+        assert result.exit_code == 1
+        assert result.exception
+       
+
 def test_terra():
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()

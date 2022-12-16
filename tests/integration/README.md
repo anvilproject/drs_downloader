@@ -9,14 +9,8 @@ Tests in this folder require a drs server with a known population of data object
 * Part download failed - a terra test with a bad part (bad checksum)
 
 #Add extra flag notation for 
-
 TERRA DATA REPOSITORY 
 * Unauthorized google auth - a terra test with a valid google credential, but not authorized to download
-
-
-
-* A test that overwrites an existing file
-
 
 DONE
 * parse without header - a test with a manifest missing the expected header column
@@ -28,6 +22,8 @@ DONE
 * URIS NOT FOUND GEN3 AND TERRA
 * A test with Parts > 1000  - test a very big file, the system will prompt with a warning
 * authorization failed - a gen3 test good credential key, but not authorized to download 
+* Duplicate URIS testing
+
 
 
 

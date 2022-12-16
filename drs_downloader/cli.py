@@ -56,6 +56,7 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
 
     # get ids from manifest
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
+    logger.info("IDS FROM MANIFEST ",ids_from_manifest)
 
     # perform downloads with a terra drs client
     _perform_downloads(destination_dir, TerraDrsClient(), ids_from_manifest, silent)
@@ -121,7 +122,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
     at_least_one_error = False
     for drs_object in drs_objects:
         if len(drs_object.errors) > 0:
-            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+            logger.info((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
             at_least_one_error = True
     if at_least_one_error:
         exit(99)
@@ -176,6 +177,11 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
             else:
                 raise Exception(
                     "Check that your header name for your DRS URIS is directly above the column of your DRS URIS")
+
+        if(len(uris) != len(set(uris))):
+            raise Exception("Duplicate URIS: ",str(list(set([x for x in uris if uris.count(x) > 1]))),"found in your TSV file ")
+            
+
     return uris
 
 

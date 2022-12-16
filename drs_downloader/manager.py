@@ -11,6 +11,7 @@ import os
 import tqdm
 import tqdm.asyncio
 import sys
+import pdb
 
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
@@ -193,7 +194,7 @@ class DrsAsyncManager(DrsManager):
 
         drs_object.file_parts = paths
 
-        i = 1
+   
         filename = f"{drs_object.name}"
         original_file_name = Path(filename)
         while True:
@@ -270,7 +271,7 @@ class DrsAsyncManager(DrsManager):
                     self._run_download_parts(drs_object=drs_object, destination_path=destination_path))
                 tasks.append(task)
             else:
-                logger.error(f"{drs_object.id} has errors, not attempting anything further")
+                logger.error(f"{drs_object.id} has error {drs_object.errors}, not attempting anything further")
 
         drs_objects_with_file_parts = [
             await f

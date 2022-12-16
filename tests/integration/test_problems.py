@@ -4,6 +4,7 @@ import time
 import os 
 import json
 import subprocess
+import pdb
 
 def test_terra_bad_tsv():
     """The terra command should execute with an error."""
@@ -56,20 +57,21 @@ def test_gen3_uri_not_found(caplog):
                                 'tests/fixtures/credentials.json', '--manifest_path', 'tests/fixtures/gen3_unauthorized_uris.tsv'])
 
     messages=caplog.messages
-    assert any(("NOT FOUND" in message for message in messages))
+    print("VALUE OF MESSAGES ",messages)
+    assert any(["NOT FOUND" in message for message in messages])
 
 def test_terra_uri_not_found(caplog):
     runner = CliRunner()
     runner.invoke(cli, ['terra', '--manifest_path', 'tests/fixtures/bad_terra_uris.tsv'])
     messages=caplog.messages
-    assert any(("Not Found" in message for message in messages))
+    assert any(["Not Found" in message for message in messages])
 
 def test_gen3_weak_creds(caplog):
     runner = CliRunner()
     runner.invoke(cli, ['gen3', '--endpoint', 'https://development.aced-idp.org', '--api_key_path', 
                                 'tests/fixtures/weak_creds.json', '--manifest_path', 'tests/fixtures/gen3-small.tsv'])
     messages=caplog.messages
-    assert any(("UNAUTHORIZED" in message for message in messages))
+    assert any(["UNAUTHORIZED" in message for message in messages])
 
 def test_terra_large_file():
     dir = os.path.realpath('logs.log')
