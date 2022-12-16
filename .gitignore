@@ -134,3 +134,5 @@ site/
 # ignore pycharm
 .idea/
 
+tests/fixtures/*.json
+

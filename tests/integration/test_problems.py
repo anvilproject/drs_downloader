@@ -1,0 +1,85 @@
+from click.testing import CliRunner
+from drs_downloader.cli import cli
+import time
+import os 
+import json
+import subprocess
+
+def test_terra_bad_tsv():
+    """The terra command should execute with an error."""
+    runner = CliRunner()
+    result = runner.invoke(cli, ['terra', '--manifest_path', 'tests/fixtures/terra-data-bad.tsv'])
+    assert result.exit_code != 0
+
+
+def test_gen3_bad_tsv():
+    """The gen3 command should execute with an error."""
+    runner = CliRunner()
+    result = runner.invoke(cli, ['gen3', '--endpoint', 'https://development.aced-idp.org', '--manifest_path',
+                                 'tests/fixtures/gen3-bad.tsv'])
+    assert result.exit_code != 0
+
+def test_gen3_bad_credentials(caplog):
+    """The gen3 command should execute with an error."""
+    runner = CliRunner()
+    result = runner.invoke(cli, ['gen3', '--endpoint', 'https://development.aced-idp.org', '--api_key_path', 
+                                'tests/fixtures/bad_credentials.json', '--manifest_path', 'tests/fixtures/gen3-small.tsv'])
+
+    if len( [string for string in caplog.messages if("Invalid access token in" in string)])>0:
+       assert result.exit_code != 0
+
+def test_terra_good_gcloud(caplog):
+    """The gen3 command should execute with an error."""
+    runner = CliRunner()
+    runner.invoke(cli, ['terra', '--manifest_path','tests/fixtures/terra-data.tsv'])
+    messages=caplog.messages
+    assert any(("google-cloud-sdk" in message for message in messages))
+
+def test_terra_bad_gcloud(caplog):
+    """The gen3 command should execute with an error."""
+    paths = os.getenv('PATH').split(":")
+    deldexes = [paths.index(path) for path in paths if("google-cloud-sdk" in path)]
+    for deldex in deldexes: del(paths[deldex])
+    paths =':'.join(paths)
+   
+    dict_str = {}
+    dict_str.update(dict(PATH = paths))
+    runner = CliRunner(env=dict_str)
+    result = runner.invoke(cli, ['terra', '--manifest_path','tests/fixtures/terra-data.tsv'])
+    messages=caplog.messages
+    #print("THE VALUE OF MESSAGES ",messages)
+    assert not any(("google-cloud-sdk" in message for message in messages))
+
+def test_gen3_uri_not_found(caplog):
+    runner = CliRunner()
+    runner.invoke(cli, ['gen3', '--endpoint', 'https://development.aced-idp.org', '--api_key_path', 
+                                'tests/fixtures/credentials.json', '--manifest_path', 'tests/fixtures/gen3_unauthorized_uris.tsv'])
+
+    messages=caplog.messages
+    assert any(("NOT FOUND" in message for message in messages))
+
+def test_terra_uri_not_found(caplog):
+    runner = CliRunner()
+    runner.invoke(cli, ['terra', '--manifest_path', 'tests/fixtures/bad_terra_uris.tsv'])
+    messages=caplog.messages
+    assert any(("Not Found" in message for message in messages))
+
+def test_gen3_weak_creds(caplog):
+    runner = CliRunner()
+    runner.invoke(cli, ['gen3', '--endpoint', 'https://development.aced-idp.org', '--api_key_path', 
+                                'tests/fixtures/weak_creds.json', '--manifest_path', 'tests/fixtures/gen3-small.tsv'])
+    messages=caplog.messages
+    assert any(("UNAUTHORIZED" in message for message in messages))
+
+def test_terra_large_file():
+    dir = os.path.realpath('logs.log')
+    result = subprocess.Popen(['drs_download','terra', '--manifest_path', 'tests/fixtures/terra-large-file.tsv'])
+    time.sleep(5)
+    result.kill()
+    with open(dir, "r") as fd:
+        str_store = fd.readlines()   
+        assert any(("has over 1000 parts, consider optimization." in message for message in str_store))
+
+
+
+
