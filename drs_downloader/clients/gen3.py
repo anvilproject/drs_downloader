@@ -84,7 +84,6 @@ class Gen3DrsClient(DrsClient):
                     await file.close()
                     return Path(file_name)
         except Exception as e:
-            logger.error(f"gen3.download_part {str(e)}")
             drs_object.errors.append(str(e))
             return None
 

@@ -21,6 +21,8 @@ BAD_MD5 = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_MD5"))
 BAD_SIGNATURE = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_SIGNATURE"))
 
 
+
+
 class MockDrsClient(DrsClient):
     """Simulate responses from server.
 
