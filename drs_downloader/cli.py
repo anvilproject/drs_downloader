@@ -48,6 +48,7 @@ def mock(silent: bool, destination_dir: str, number_of_object_ids):
               help="Path to manifest tsv.")
 @click.option('--drs_header', default=None, help='The column header in the TSV file associated with the DRS URIs.'
               'Example: pfb:ga4gh_drs_uri')
+# @click.option('--project_id', default=None, help='The Google Project ID used for billing. Example: terra-314159')
 def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: str):
     """Copy files from terra.bio"""
 
@@ -125,7 +126,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
             logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
             at_least_one_error = True
     if at_least_one_error:
-        exit(99)
+        exit(1)
 
 
 def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
@@ -168,8 +169,8 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
                 uris.append(row[uri_index])
         else:
             raise KeyError(
-                "Key format for drs_uri is bad. Make sure the column that contains the URIS has 'uri' somewhere in it,"
-                "   or the URI header matches the uri header name in the TSV file that was specified")
+                f"DRS header value '{drs_header}' not found in manifest file '{manifest_path}.'"
+                " Please specify a new value with the --drs_header flag.")
 
         for url in uris:
             if '/' in url:

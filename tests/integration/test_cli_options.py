@@ -6,12 +6,13 @@ import tempfile
 from click.testing import CliRunner
 
 from drs_downloader.cli import cli
+from tests import MANIFESTS
 
 
 def test_terra():
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-data.tsv'])
+        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', MANIFESTS / 'terra-data.tsv'])
         assert result.exit_code == 0
 
         files = sorted(next(os.walk(dest))[2])
@@ -26,7 +27,7 @@ def test_terra():
 def test_terra_one_file():
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-one-file.tsv'])
+        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', MANIFESTS / 'terra-one-file.tsv'])
         assert result.exit_code == 0
 
         files = next(os.walk(dest))[2]
@@ -67,7 +68,7 @@ def _verify_file(file: Path, expected_size: int, expected_md5: str) -> bool:
 def test_terra_silent():
     """The terra command should execute without error."""
     runner = CliRunner()
-    result = runner.invoke(cli, ['terra', '--silent', '--manifest_path', 'tests/fixtures/terra-data.tsv'])
+    result = runner.invoke(cli, ['terra', '--silent', '--manifest_path', MANIFESTS / 'terra-data.tsv'])
     assert result.exit_code == 0
 
 
@@ -75,7 +76,7 @@ def test_gen3():
     """The gen3 command should execute without error."""
     runner = CliRunner()
     result = runner.invoke(cli, ['gen3', '--endpoint', 'https://development.aced-idp.org', '--api_key_path',
-                                 'tests/fixtures/credentials.json', '--manifest_path', 'tests/fixtures/gen3-small.tsv'])
+                                 'tests/fixtures/credentials.json', '--manifest_path', MANIFESTS / 'gen3-small.tsv'])
     assert result.exit_code == 0
 
 
@@ -83,5 +84,5 @@ def test_gen3_silent():
     """The gen3 command should execute without error."""
     runner = CliRunner()
     result = runner.invoke(cli, ['gen3', '--silent', '--endpoint', 'https://development.aced-idp.org', '--api_key_path',
-                                 'tests/fixtures/credentials.json', '--manifest_path', 'tests/fixtures/gen3-small.tsv'])
+                                 'tests/fixtures/credentials.json', '--manifest_path', MANIFESTS / 'gen3-small.tsv'])
     assert result.exit_code == 0

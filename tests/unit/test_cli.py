@@ -3,10 +3,11 @@ from pathlib import Path
 import pytest
 
 from drs_downloader.cli import _extract_tsv_info
+from tests import MANIFESTS
 
 
 def test_extract_tsv_info():
-    tsv_path = Path("tests/fixtures/terra-data.tsv")
+    tsv_path = Path(MANIFESTS, "terra-data.tsv")
     drs_header = "pfb:ga4gh_drs_uri"
     expected_len = 10
     expected_first = "drs://dg.4503:dg.4503/15fdd543-9875-4edf-8bc2-22985473dab6"
@@ -30,8 +31,8 @@ def test_extract_tsv_info():
 
     # No header found in TSV file
     with pytest.raises(KeyError):
-        _extract_tsv_info(Path("tests/fixtures/no-header.tsv"), None)
+        _extract_tsv_info(Path(MANIFESTS, "no-header.tsv"), None)
 
     # No header found in TSV file despite user passing in header value
     with pytest.raises(KeyError):
-        _extract_tsv_info(Path("tests/fixtures/no-header.tsv"), drs_header)
+        _extract_tsv_info(Path(MANIFESTS, "no-header.tsv"), drs_header)

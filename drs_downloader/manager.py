@@ -403,8 +403,8 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_downloaders = 10
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
-            self.part_size = 5 * MB
-            self.max_simultaneous_part_handlers = 1
+            self.part_size = 1 * MB
+            self.max_simultaneous_part_handlers = 2
             self.max_simultaneous_downloaders = 10
 
         else:
@@ -442,12 +442,15 @@ class DrsAsyncManager(DrsManager):
             bool: True if the file part exists in the destination and has the expected file size, False otherwise
         """
 
-        if (not file_path.exists()):
-            return False
+        if (file_path.exists()):
+            expected_size = size - start
+            if (start == 0):
+                expected_size += 1
 
-        expected_size = size - start
-        if (start == 0):
-            expected_size += 1
+            actual_size = file_path.stat().st_size
+            sizes_match = actual_size == expected_size
+            if sizes_match is True:
+                logger.info(f"{file_path.name} exists and has expected size. Skipping download.")
+                return True
 
-        actual_size = file_path.stat().st_size
-        return actual_size == expected_size
+        return False

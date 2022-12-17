@@ -7,16 +7,17 @@
 
 A file download tool for AnVIL/TDR data identified by DRS URIs
 
+
 - [Installation](#installation)
-  - [Checksum Verification](#checksum-verification)
-    - [Successful Verification Example](#successful-verification-example)
-    - [Unsuccessful Verification Example](#unsuccessful-verification-example)
+    - [Checksum Verification](#checksum-verification)
+    - [Requirements](#requirements)
+        - [Authentication](#authentication)
 - [Usage](#usage)
-  - [Quick Start](#quick-start)
-    - [Arguments:](#arguments)
-  - [Example](#example)
-  - [Help/Additional Options](#helpadditional-options)
-- [Authentication](#authentication)
+    - [Quick Start](#quick-start)
+        - [Arguments](#arguments)
+    - [Basic Example](#basic-example)
+    - [Example with a Different Header Value](#example-with-a-different-header-value)
+    - [Help/Additional Options](#helpadditional-options)
 - [Credits](#credits)
 
 ## Installation
@@ -36,11 +37,12 @@ Download the latest `drs_downloader` zip file for your operating system. Unzippi
 
 ### Checksum Verification
 
-In order to verify that the downloaded file can be trusted checksums are provided in [`checksums.txt`][checksums]. See below for an example of how to use this file.
+In order to verify that the downloaded file can be trusted checksums are provided in [`checksums.txt`][checksums]. See below for examples of how to use this file.
 
-#### Successful Verification Example
+<details>
+<summary>Successful Verification</summary>
 
-To verify the integrity of the binaries on macOS run the following:
+To verify the integrity of the binaries on macOS run the following in the same directory as the downloaded zip file:
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
@@ -48,8 +50,10 @@ drs-downloader-macOS.zip: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
+</details>
 
-#### Unsuccessful Verification Example
+<details>
+<summary>Unsuccessful Verification</summary>
 
 Alternatively if the commad outputs `FAILED` than the checksum did not match and the binary should not be run.
 
@@ -61,6 +65,36 @@ shasum: checksums.txt: no file was verified
 ```
 
 In such a case please reach out to the contributors for assistance.
+</details>
+
+### Requirements
+
+The downloader requires that a Google Cloud project be designated as the billing project. In order for the downloader to authenticate and set the desired billing project the gcloud CLI tool must first be installed:
+
+* [gcloud CLI](https://cloud.google.com/sdk/docs/install) — used to authenticate the downloader and set the billing project.
+* [Python](https://www.python.org/) — required for gcloud CLI functionality.
+
+#### Authentication
+
+Upon running the following `gcloud` command a browser window will open in which you may choose the Google account used for the billing project:
+
+```sh
+$ gcloud auth login
+Your browser has been opened to visit:
+
+    https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=...
+
+
+You are now logged in as [rosalind@ohsu.edu].
+Your current project is [terra-314159].  You can change this setting by running:
+  $ gcloud config set project PROJECT_ID
+```
+
+To change the billing project at any time you may use either the `$ gcloud config set project PROJECT_ID` command or the built-in `drs-downloader` command:
+
+```sh
+$ drs_downloader terra --project-id Project ID>
+```
 
 ## Usage
 
@@ -70,30 +104,33 @@ In such a case please reach out to the contributors for assistance.
 $ drs_downloader terra -m <manifest file> -d <destination directory>
 ```
 
-#### Arguments:
+#### Arguments
 
 `-s, --silent`
-: Disables all output to the terminal during and after downloading.
+> Disables all output to the terminal during and after downloading.
 
 `-d, --destination_dir TEXT`
-: The directory or folder to download the DRS Objects to. Defaults to `/tmp/testing` if no value is provided.
+> The directory or folder to download the DRS Objects to. Defaults to `/tmp/testing` if no value is provided.
 
 `-m, --manifest_path TEXT`
-: The manifest file that contains the DRS Objects to be downloaded. Typically a TSV file with one row per DRS Object.
+> The manifest file that contains the DRS Objects to be downloaded. Typically a TSV file with one row per DRS Object.
 
 `--drs_header TEXT`
-: The value of the column in the manifest file containing the DRS Object IDs. Defaults to `pfb:ga4gh_drs_uri` if no value is provided.
+> The value of the column in the manifest file containing the DRS Object IDs. Defaults to `pfb:ga4gh_drs_uri` if no value is provided.
 
-### Example
+### Basic Example
 
 The below command is a basic example of how to structure a download command with all of the required arguments. It uses:
 
-* a manifest file called [`terra-data.tsv`](https://github.com/anvilproject/drs_downloader/blob/abdb19335a076d8c127f381a5e1a116fa49c8332/tests/fixtures/terra-data.tsv) with 10 DRS Objects
-* a DRS header value of `pfb:ga4gh_drs_uri` within the manifest file to reference the DRS Objects. It can be omitted since this is the default value used by the downloader.
-* a directory called `DATA` as the download destination
+* a **manifest file** called [`terra-data.tsv`][terra-data] with 10 DRS Objects
+* a **DRS header value** of `pfb:ga4gh_drs_uri` within the manifest file to reference the DRS Objects. It can be omitted since this is the default value used by the downloader.
+* a **download directory** called `DATA` as the destination
+
+[terra-data]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-data.tsv
+
 
 ```sh
-$ drs_downloader terra -m tests/fixtures/terra-data.tsv -d DATA
+$ drs_downloader terra -m tests/fixtures/manifest/terra-data.tsv -d DATA
 100%|████████████████████████████████| 10/10 [00:00<00:00, 56148.65it/s]
 
 2022-11-21 16:56:49,595 ('HG03873.final.cram.crai', 'OK', 1351946, 1)
@@ -120,7 +157,17 @@ HG02142.final.cram.crai HG03873.final.cram.crai
 NA18613.final.cram.crai NA20525.final.cram.crai
 ```
 
-Let's take a look at different manifest file called `anvil_1000_genomes_public_file_inventory.tsv`. Namely the DRS header value is now 'drs_uri'
+### Example with a Different Header Value
+
+Let's take a look at different manifest file called [`terra-different-header.tsv`][terra-different-header]. Namely the DRS header value is now `drs_uri` so we will need to tell the downloader which column to find the DRS URI's in the manifest with the `--drs_header` flag:
+
+```sh
+drs_downloader terra -m tests/fixtures/manifests/terra-different-header.tsv -d DATA --drs_header drs_uri
+```
+
+This will download the DRS Objects specified in the `drs_uri` column into the `DATA` directory just as before.
+
+[terra-different-header]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-different-header.tsv 
 
 ### Help/Additional Options
 
@@ -141,51 +188,6 @@ Options:
                               with the DRS URIs.Example: pfb:ga4gh_drs_uri
   --help                      Show this message and exit.
 ```
-
-## Authentication
-
-In order to get the downloader to work, you will need to install Google gcloud CLI on your local machine. https://cloud.google.com/sdk/docs/install
-
-Next, you must connect the google account that your Terra account connected to gcloud. This is done with gcloud auth login:
-
-```sh
-gcloud auth login
-```
-
-You need to have a terra project that is set up for billing. Once you get one, go to your terra workspaces page: https://anvil.terra.bio/#workspaces/
-
-Click on the project that you want to bill to. On the righthand corner of the screen click on Cloud Information heading.
-
-Copy and paste the Google Project Id field into the below command:
-
-```sh
-gcloud config set project <project ID>
-```
-
-Next, you need to link your Google account to the location where the DRS URIs will download from. This is endpoint specific.
-
-Go to this page: https://anvil.terra.bio/#profile?tab=externalIdentities
-
-If you are logging into bio data catalyst do the following:
-
-1. Right click on the log in/renew button.
-2. Select copy url.
-3. Copy this link in another tab but instead of pressing enter go to the end of the URL that was copied
-   and change the suffix of the URL from =[old suffix] to =google
-
-If your URIs are not from bio data catalyst then authenticate with your Terra Linked Google account on the other
-sites.
-
-Now run `gcloud auth print-access-token`. This should return a long string of letters an numbers. If it doesn't then
-your Terra google account is probably not linked with your gcloud account.
-
-To test that this setup returns signed URLs copy and paste the below curl command into your terminal, but instead of running it replace [URI] with a DRS uri that belongs to a small file from your TSV file. By running this in terminal you should get back a signed URL that you can copy and paste into your browser to download a file.
-
-```sh
-curl --request POST  --url https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3  --header "authorization: Bearer $(gcloud auth print-access-token)"  --header 'content-type: application/json'  --data '{ "url": "[URI]", "fields": ["fileName", "size", "hashes", "accessUrl"] }'
-```
-
-If you can run the above command with your own drs URI than you are setup to run the command line tool.
 
 ## Credits
 

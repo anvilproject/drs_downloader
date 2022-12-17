@@ -10,6 +10,7 @@ from click.testing import CliRunner
 from drs_downloader.cli import _extract_tsv_info, cli
 from drs_downloader.clients.terra import TerraDrsClient
 from drs_downloader.manager import DrsAsyncManager
+from tests import MANIFESTS, PARTS, INTERRUPTED_DOWNLOAD, COMPLETE_DOWNLOAD
 
 
 def test_interrupted_download(caplog):
@@ -20,34 +21,31 @@ def test_interrupted_download(caplog):
     directory within tests/fixtures.
 
     In the interrupted download directory there are:
-        - 10 DRS objects in total over 12 downloaded files
-        - 1 complete download
-        - 9 incomplete downloads
+        - 10 total DRS objects
+        - 1 complete DRS object (HG04209.final.cram.crai)
+        - 9 incomplete DRS objects
     """
 
     caplog.set_level(logging.INFO)
-    fixtures_dir = 'tests/fixtures'
-    interrupted_dir = Path(fixtures_dir, 'interrupted_download')
-    complete_dir = Path(fixtures_dir, 'complete_download')
-    complete_files = sorted(next(os.walk(complete_dir))[2])
+    complete_files = sorted(next(os.walk(COMPLETE_DOWNLOAD))[2])
     assert len(complete_files) == 10  # asserting that the fixtures have the expected number of files
 
     with tempfile.TemporaryDirectory() as dest:
-        for file in os.listdir(Path(interrupted_dir)):
-            shutil.copy2(Path(interrupted_dir, file), dest)
+        for file in os.listdir(INTERRUPTED_DOWNLOAD):
+            shutil.copy2(INTERRUPTED_DOWNLOAD / file, dest)
 
-        assert _are_dirs_equal(complete_dir, dest) is False
+        assert _are_dirs_equal(COMPLETE_DOWNLOAD, dest) is False
 
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '-m', 'tests/fixtures/terra-data.tsv'])
+        result = runner.invoke(cli, ['terra', '-d', dest, '-m', MANIFESTS / 'terra-data.tsv'])
         assert result.exit_code == 0
 
-        assert _are_dirs_equal(complete_dir, dest) is True
+        assert _are_dirs_equal(COMPLETE_DOWNLOAD, dest) is True
         assert f"HG04209.final.cram.crai already exists in {dest}. Skipping download." in caplog.messages
         assert "HG00536.final.cram.crai had 1 existing parts." in caplog.messages
 
         # Run the downloader again in the destination directory to verify that all DRS objects are present
-        result = runner.invoke(cli, ['terra', '-d', dest, '-m', 'tests/fixtures/terra-data.tsv'])
+        result = runner.invoke(cli, ['terra', '-d', dest, '-m', MANIFESTS / 'terra-data.tsv'])
         assert result.exit_code == 0
         assert f"All DRS objects already present in {dest}." in caplog.messages
 
@@ -88,7 +86,7 @@ def test_check_existing_files():
         filtered_objects = drs_manager.filter_existing_files(drs_objects, dest)
         assert len(filtered_objects) == len(drs_objects)
 
-        shutil.copy2("tests/fixtures/parts/HG00536.final.cram.crai", dest)
+        shutil.copy2(PARTS / "HG00536.final.cram.crai", dest)
         filtered_objects = drs_manager.filter_existing_files(drs_objects, dest)
         assert len(filtered_objects) == len(drs_objects) - 1
 
@@ -121,7 +119,7 @@ def test_existing_parts():
 
 
 def _part_exists(part_file: str, dest: str) -> bool:
-    part_fixture = Path("tests/fixtures/interrupted_download", part_file)
+    part_fixture = INTERRUPTED_DOWNLOAD / part_file
     shutil.copy2(part_fixture, dest)
 
     start = int(part_fixture.name.split(".")[-3])
@@ -133,7 +131,7 @@ def _part_exists(part_file: str, dest: str) -> bool:
 
 
 def _get_drs_manager():
-    tsv_path = "tests/fixtures/manifests/terra-data.tsv"
+    tsv_path = MANIFESTS / "terra-data.tsv"
     drs_header = "pfb:ga4gh_drs_uri"
 
     # get a drs client

@@ -45,7 +45,7 @@ class TerraDrsClient(DrsClient):
             token = subprocess.check_output(cmd).decode("ascii")[0:-1]
         except FileNotFoundError:
             logger.error("gcloud not found")
-            exit(99)
+            exit(1)
         assert token, "No token retrieved."
         return token
 
@@ -104,7 +104,7 @@ class TerraDrsClient(DrsClient):
                     cmd = account_command.split(' ')
                     account = subprocess.check_output(cmd).decode("ascii")
                     raise Exception(
-                        f"A valid URL was not returned from the server.  Please check the access for {account}\n{resp}")
+                        f"A valid URL was not returned from the server. Please check the access for {account}\n{resp}")
                 url_ = resp['accessUrl']['url']
                 drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
                 return drs_object

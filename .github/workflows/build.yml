@@ -53,7 +53,7 @@ jobs:
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --statistics
+          flake8 tests/ drs_downloader/  --count --statistics
 
       - name: Unit tests (No server dependencies) with pytest
         run: pytest tests/unit --cov=drs_downloader --cov-report term-missing

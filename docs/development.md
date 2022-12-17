@@ -3,23 +3,67 @@
 To get ready for development first get the code:
 
 ```sh
-git clone https://github.com/anvilproject/drs_downloader
-cd drs_downloader
+$ git clone https://github.com/anvilproject/drs_downloader
+$ cd drs_downloader
 ```
 
 Then create and activate a virtual environment using `Python3.9`:
 
 ```sh
-python3.9 -m venv venv
-. venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
+$ python3.9 -m venv venv
+$ . venv/bin/activate
+$ pip install -r requirements.txt -r requirements-dev.txt
 ```
+
+## Terra Authentication
+
+In order for the downloader to work, you will need to install Google gcloud CLI on your local machine. https://cloud.google.com/sdk/docs/install
+
+Next, you must connect the google account that your Terra account connected to gcloud. This is done with gcloud auth login:
+
+```sh
+$ gcloud auth login
+```
+
+You need to have a terra project that is set up for billing. Once you get one, go to your terra workspaces page: https://anvil.terra.bio/#workspaces/
+
+Click on the project that you want to bill to. On the righthand corner of the screen click on Cloud Information heading.
+
+Copy and paste the Google Project Id field into the below command:
+
+```sh
+$ gcloud config set project <project ID>
+```
+
+Next, you need to link your Google account to the location where the DRS URIs will download from. This is endpoint specific.
+
+Go to [anvil.terra.bio profile](https://anvil.terra.bio/#profile?tab=externalIdentities) page
+
+If you are logging into bio data catalyst do the following:
+
+1. Right click on the log in/renew button.
+2. Select copy url.
+3. Copy this link in another tab but instead of pressing enter go to the end of the URL that was copied and change the suffix of the URL from `=[old suffix]` to `=google`
+
+If your URIs are not from bio data catalyst then authenticate with your Terra Linked Google account on the other sites.
+
+Now run `gcloud auth print-access-token`. This should return a long string of letters an numbers. If it doesn't then your Terra google account is probably not linked with your gcloud account.
+
+To test that this setup returns signed URLs copy and paste the below curl command into your terminal, but instead of running it replace [URI] with a DRS uri that belongs to a small file from your TSV file. By running this in terminal you should get back a signed URL that you can copy and paste into your browser to download a file.
+
+```sh
+$ curl --request POST  --url https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3  --header "authorization: Bearer $(gcloud auth print-access-token)"  --header 'content-type: application/json'  --data '{ "url": "[URI]", "fields": ["fileName", "size", "hashes", "accessUrl"] }'
+```
+
+If you can run the above command with your own DRS URI than you are setup to run the command line tool.
 
 Now you should be ready to start coding and testing!
 
+## Gen3 Authentication
+
 ## Tests
 
-All tests and test files are stored in the `tests` directory. Pytest is used as the testing framework. To run all tests with a coverage report run `pytest` with the `--cov=tests` flag:
+All tests and test files are stored in the `tests` directory. [Pytest](https://pytest.org/) is used as the testing framework. To run all tests with a coverage report run `pytest` with the `--cov=tests` flag:
 
 ```sh
 $ pytest --cov=tests
@@ -68,3 +112,21 @@ Pull requests, issues, and feature requests welcome. Please reach out if you hav
     ├── fixtures         # Test manifest files
     └── unit             # Unit tests
 ```
+
+## Useful Packages
+
+Here are a few packages we've found useful for this project:
+
+Pip Packages
+- [pipdeptree](https://pypi.org/project/pipdeptree/)
+- [Flake8](https://pypi.org/project/flake8/)
+- [autopep8](https://pypi.org/project/autopep8/)
+
+Git Extensions
+- [pre-commit](https://pre-commit.com/)
+- [git-secrets](https://github.com/awslabs/git-secrets)
+
+VS Code Extensions
+- [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring)
+- [Markdown All in One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one)
+- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
