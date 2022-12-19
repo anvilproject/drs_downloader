@@ -149,7 +149,8 @@ class DrsAsyncManager(DrsManager):
             parts.append((start, size, ))
 
         if len(parts) > 1000:
-            logger.error(f'tasks > 1000 {drs_object.name} has over 1000 parts, consider optimization. ({len(parts)})')
+            logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
+                ({len(parts)})')
 
         paths = []
         # TODO - tqdm ugly here?
@@ -181,7 +182,8 @@ class DrsAsyncManager(DrsManager):
         drs_object.file_parts = paths
 
         i = 1
-        filename = f"{drs_object.name}"
+        filename = f"{drs_object.name}" or drs_object.access_methods[0].access_url.split("/")[-1].split('?')[0]
+        print("!!!", drs_object.access_methods[0].access_url.split("/")[-1].split('?')[0])
         original_file_name = Path(filename)
         while True:
             if os.path.isfile(destination_path.joinpath(filename)):
@@ -312,14 +314,7 @@ class DrsAsyncManager(DrsManager):
 
         drs_objects = []
 
-        total_batches = len(object_ids) / self.max_simultaneous_object_retrievers
-        # rounding
-        # this would imply that if batch count is 9.3, and you round down the last .3 is never
-        # actually downloaded since there are only 9 batches. math.ciel would round up if there is a decimal at all
-        if math.ceil(total_batches) - total_batches > 0:
-            total_batches += 1
-            total_batches = int(total_batches)
-
+        total_batches = math.ceil(len(object_ids) / self.max_simultaneous_part_handlers)
         current = 0
 
         for chunk_of_object_ids in DrsAsyncManager.chunker(object_ids, self.max_simultaneous_object_retrievers):
@@ -377,7 +372,7 @@ class DrsAsyncManager(DrsManager):
 
         elif any(drs_object.size > (1 * GB) for drs_object in drs_objects):
             self.max_simultaneous_part_handlers = 10
-            self.part_size = 10 * MB
+            self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):

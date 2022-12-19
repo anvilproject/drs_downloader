@@ -126,7 +126,7 @@ class TerraDrsClient(DrsClient):
         """
         data = {
             "url": object_id,
-            "fields": ["fileName", "size", "hashes", "accessUrl"]
+            "fields": ["fileName", "size", "hashes"]
         }
         session = aiohttp.ClientSession(headers={
             'authorization': 'Bearer ' + self.token,

@@ -8,15 +8,15 @@
 A file download tool for AnVIL/TDR data identified by DRS URIs
 
 - [Installation](#installation)
-  - [Checksums](#checksums)
-    - [Successful Verification](#successful-verification)
-    - [Unsuccessful Verification](#unsuccessful-verification)
+    - [Checksums](#checksums)
+        - [Successful Verification](#successful-verification)
+        - [Unsuccessful Verification](#unsuccessful-verification)
 - [Usage](#usage)
-  - [Quick Start](#quick-start)
-  - [Example](#example)
-  - [Additional Options](#additional-options)
+    - [Quick Start](#quick-start)
+    - [Example](#example)
+    - [Additional Options](#additional-options)
 - [Development](#development)
-  - [Tests](#tests)
+    - [Tests](#tests)
 - [Authentication](#authentication)
 - [Credits](#credits)
 - [Contributing](#contributing)
@@ -108,7 +108,7 @@ Usage: drs_download terra [OPTIONS]
 
 Options:
   -s, --silent                Display nothing.
-  -d, --destination_dir TEXT  Destination directory.  [default: /tmp/testing]
+  -d, --destination_dir TEXT  Destination directory.  [default: os.getcwd()]
   -m, --manifest_path TEXT    Path to manifest tsv.  [default:
                               tests/fixtures/terra-data.tsv]
   --help                      Show this message and exit.
@@ -128,6 +128,7 @@ Then create and activate a virtual environment using `Python3.9`:
 python3.9 -m venv venv
 . venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
+pip install -e .
 ```
 
 Now you should be ready to start coding and testing!

@@ -20,7 +20,7 @@ def test_mock_all_ok(number_of_object_ids=10):
     tsv_file = manifest_all_ok(number_of_object_ids)
     print(tsv_file.name)
 
-    result = runner.invoke(cli, ['mock', '--manifest_path', tsv_file.name])
+    result = runner.invoke(cli, ['mock', '--manifest-path', tsv_file.name])
 
     assert result.exit_code == 0
 
@@ -40,7 +40,7 @@ def test_mock_bad_file_size(caplog):
     tsv_file = manifest_bad_file_size()
 
     print(tsv_file.name)
-    result = runner.invoke(cli, ['mock', '--manifest_path', tsv_file.name])
+    result = runner.invoke(cli, ['mock', '--manifest-path', tsv_file.name])
 
     # should return non zero
     assert result.exit_code != 0

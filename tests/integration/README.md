@@ -17,3 +17,11 @@ Tests in this folder require a drs server with a known population of data object
 * workflow mgt - manifest with 1 file
 * workflow mgt - any file in manifest > 1 GB
 
+
+# Needed
+
+* DRS URI that doesn't return name of file to test URL splitting. manager.py:184
+
+* Write test for checking no destination path specified downloads to current working directory. https://github.com/anvilproject/drs_downloader/pull/15#discussion_r1051637307
+
+* Write test for checking part size == 128MB on batches with 1GB files. https://github.com/anvilproject/drs_downloader/pull/15#discussion_r1051653484

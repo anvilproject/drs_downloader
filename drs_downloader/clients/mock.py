@@ -71,7 +71,7 @@ class MockDrsClient(DrsClient):
 
         length_ = size - start + 1
         # logger.info((drs_object.name, start, length_))
-        with open(Path(f'/tmp/testing/{drs_object.name}.golden'), 'rb') as f:
+        with open(Path(os.getcwd(), f'{drs_object.name}.golden'), 'rb') as f:
             f.seek(start)
             data = f.read(length_)
 
@@ -117,7 +117,7 @@ class MockDrsClient(DrsClient):
         size_ = len(lines)
 
         # write it for testing
-        destination_dir = Path('/tmp/testing')
+        destination_dir = Path(os.getcwd())
         destination_dir.mkdir(parents=True, exist_ok=True)
         with open(Path(f'{destination_dir}/{name_}.golden'), 'wb') as f:
             f.write(lines)

@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from typing import List
 import math
@@ -25,19 +26,19 @@ def cli():
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
-@click.option("--destination_dir", "-d", show_default=True, default='/tmp/testing',
+@click.option("--destination-dir", "-d", show_default=True, default=os.getcwd(),
               help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True,
+@click.option("--manifest-path", "-m", show_default=True,
               help="Path to manifest tsv.")
-@click.option('--drs_header', default='ga4gh_drs_uri', show_default=True,
+@click.option('--drs-column-name', default='ga4gh_drs_uri', show_default=True,
               help='The column header in the TSV file associated with the DRS URIs.'
                    'Example: pfb:ga4gh_drs_uri')
-def mock(silent: bool, destination_dir: str, manifest_path, drs_header):
+def mock(silent: bool, destination_dir: str, manifest_path, drs_column_name):
     """Generate test files locally, without the need for server."""
 
     #
     # get ids from manifest
-    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
+    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
     # perform downloads with a mock drs client
     _perform_downloads(destination_dir, MockDrsClient(), ids_from_manifest, silent)
@@ -45,17 +46,17 @@ def mock(silent: bool, destination_dir: str, manifest_path, drs_header):
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
-@click.option("--destination_dir", "-d", show_default=True,
-              default="/tmp/testing", help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True,
+@click.option("--destination-dir", "-d", show_default=True,
+              default=os.getcwd(), help="Destination directory.")
+@click.option("--manifest-path", "-m", show_default=True,
               help="Path to manifest tsv.")
-@click.option('--drs_header', default=None, help='The column header in the TSV file associated with the DRS URIs.'
+@click.option('--drs-column-name', default=None, help='The column header in the TSV file associated with the DRS URIs.'
               'Example: pfb:ga4gh_drs_uri')
-def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: str):
+def terra(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str):
     """Copy files from terra.bio"""
 
     # get ids from manifest
-    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
+    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
     # perform downloads with a terra drs client
     _perform_downloads(destination_dir, TerraDrsClient(), ids_from_manifest, silent)
@@ -63,21 +64,22 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
-@click.option("--destination_dir", "-d", show_default=True,
-              default="/tmp/testing", help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True,
+@click.option("--destination-dir", "-d", show_default=True,
+              default=os.getcwd(), help="Destination directory.")
+@click.option("--manifest-path", "-m", show_default=True,
               help="Path to manifest tsv.")
-@click.option('--drs_header', default='ga4gh_drs_uri', show_default=True,
+@click.option('--drs-column-name', default='ga4gh_drs_uri', show_default=True,
               help='The column header in the TSV file associated with the DRS URIs.'
                    'Example: pfb:ga4gh_drs_uri')
-@click.option('--api_key_path', show_default=True,
+@click.option('--api-key-path', show_default=True,
               help='Gen3 credentials file')
 @click.option('--endpoint', show_default=True, required=True,
               help='Gen3 endpoint')
-def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_header: str, api_key_path: str, endpoint: str):
+def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str,
+         api_key_path: str, endpoint: str):
     """Copy files from gen3 server."""
     # read from manifest
-    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
+    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
     _perform_downloads(destination_dir,
                        Gen3DrsClient(api_key_path=api_key_path, endpoint=endpoint),
@@ -91,6 +93,10 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
     if destination_dir:
         destination_dir = Path(destination_dir)
         destination_dir.mkdir(parents=True, exist_ok=True)
+
+    if not silent:
+        logger.info("Downloading to: ", destination_dir)
+
     # create a manager
     drs_manager = DrsAsyncManager(drs_client=drs_client, show_progress=not silent)
 
@@ -124,7 +130,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
             logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
             at_least_one_error = True
     if at_least_one_error:
-        exit(99)
+        exit(1)
 
 
 def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
@@ -171,7 +177,7 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
                 "   or the URI header matches the uri header name in the TSV file that was specified")
 
         for url in uris:
-            if '/' in url:
+            if 'drs://' in url:
                 continue
             else:
                 raise Exception(
