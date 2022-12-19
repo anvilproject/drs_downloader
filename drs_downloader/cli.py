@@ -95,7 +95,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
         destination_dir.mkdir(parents=True, exist_ok=True)
 
     if not silent:
-        logger.info("Downloading to: ", destination_dir)
+        logger.info("Downloading to: %s", destination_dir)
 
     # create a manager
     drs_manager = DrsAsyncManager(drs_client=drs_client, show_progress=not silent)

@@ -19,9 +19,8 @@ Tests in this folder require a drs server with a known population of data object
 
 
 # Needed
-
 * DRS URI that doesn't return name of file to test URL splitting. manager.py:184
+* DRS URI for testing for files >100GB to test download on extra large files 
 
-* Write test for checking no destination path specified downloads to current working directory. https://github.com/anvilproject/drs_downloader/pull/15#discussion_r1051637307
 
-* Write test for checking part size == 128MB on batches with 1GB files. https://github.com/anvilproject/drs_downloader/pull/15#discussion_r1051653484
+* write test for checking if URLS are signed in batches or not

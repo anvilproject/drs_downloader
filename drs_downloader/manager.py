@@ -9,6 +9,7 @@ from typing import List, Iterator, Tuple, Collection
 import os
 import tqdm
 import tqdm.asyncio
+import sys
 
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
@@ -16,7 +17,19 @@ from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_M
 
 from drs_downloader.models import DrsClient, DrsObject
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.DEBUG)
+
+file_handler = logging.FileHandler('logs.log')
+file_handler.setLevel(logging.NOTSET)
+
+with open('logs.log', 'w') as fd:
+    pass
+
+logger.addHandler(stdout_handler)
+logger.addHandler(file_handler)
 
 
 class DrsManager(ABC):
@@ -183,7 +196,6 @@ class DrsAsyncManager(DrsManager):
 
         i = 1
         filename = f"{drs_object.name}" or drs_object.access_methods[0].access_url.split("/")[-1].split('?')[0]
-        print("!!!", drs_object.access_methods[0].access_url.split("/")[-1].split('?')[0])
         original_file_name = Path(filename)
         while True:
             if os.path.isfile(destination_path.joinpath(filename)):
@@ -369,20 +381,24 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
             self.max_simultaneous_downloaders = 10
+            logger.error('part_size=%s', self.part_size)
 
-        elif any(drs_object.size > (1 * GB) for drs_object in drs_objects):
+        elif any(True for drs_object in drs_objects if (int(drs_object.size) > GB)):
             self.max_simultaneous_part_handlers = 10
             self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
+            logger.error('part_size=%s', self.part_size)
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
             self.part_size = 5 * MB
             self.max_simultaneous_part_handlers = 1
             self.max_simultaneous_downloaders = 10
+            logger.error('part_size=%s', self.part_size)
 
         else:
             self.part_size = 10 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
+            logger.error('part_size=%s', self.part_size)
 
         return drs_objects
