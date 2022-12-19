@@ -4,7 +4,7 @@ import os.path
 from click.testing import CliRunner
 
 from drs_downloader.cli import cli
-from drs_downloader.clients.mock import manifest_all_ok, manifest_bad_file_size
+from drs_downloader.clients.mock import manifest_all_ok, manifest_bad_file_size , manifest_bad_id_for_download
 
 
 def test_license():
@@ -49,3 +49,21 @@ def test_mock_bad_file_size(caplog):
 
     # leave test manifest in place if an error
     os.unlink(tsv_file.name)
+
+
+def test_mock_bad_id(caplog):
+    """The mock command should return an error.
+
+    Args:
+        caplog (object): https://docs.pytest.org/en/7.1.x/how-to/logging.html#caplog-fixture
+    """
+    runner = CliRunner()
+
+    # create a test manifest
+    tsv_file = manifest_bad_id_for_download()
+    result = runner.invoke(cli, ['mock', '--manifest_path', tsv_file.name])
+    assert len([r for r in caplog.records if 'had missing part' in json.dumps(r.msg)]) > 0, caplog.records
+
+    # leave test manifest in place if an error
+    os.unlink(tsv_file.name)
+
