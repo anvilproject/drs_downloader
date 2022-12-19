@@ -84,18 +84,21 @@ class Gen3DrsClient(DrsClient):
                     await file.close()
                     return Path(file_name)
         except Exception as e:
+            logger.error(f"gen3.download_part {str(e)}")
             drs_object.errors.append(str(e))
             return None
 
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
         """Call fence's /user/data/download/ endpoint. """
 
-        headers={
+        headers = {
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
         }
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url=f"{self.endpoint}/user/data/download/{drs_object.id.split(':')[-1]}") as response:
+            async with session.get(
+                url=f"{self.endpoint}/user/data/download/{drs_object.id.split(':')[-1]}"
+            ) as response:
                 try:
                     self.statistics.set_max_files_open()
                     response.raise_for_status()
@@ -106,8 +109,8 @@ class Gen3DrsClient(DrsClient):
                     return drs_object
 
                 except ClientResponseError as e:
-                        drs_object.errors.append(str(e))
-                        return drs_object
+                    drs_object.errors.append(str(e))
+                    return drs_object
 
     async def get_object(self, object_id: str) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
@@ -124,7 +127,7 @@ class Gen3DrsClient(DrsClient):
         if not self.authorized:
             await self.authorize()
 
-        headers={
+        headers = {
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
         }
@@ -157,4 +160,3 @@ class Gen3DrsClient(DrsClient):
                         name=None,
                         errors=[str(e)]
                     )
-                

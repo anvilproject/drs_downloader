@@ -1,1 +1,22 @@
+# Documentation generator based on MkDocs
+# Automatically documents API references
+# References:
+#   https://www.mkdocs.org/
+#   https://mkdocstrings.github.io/recipes/
+
 site_name: AnVIL DRS Download Tool
+
+watch:
+- drs_downloader
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - mkdocstrings
+  
+theme:
+  name: "material"
+
+use_directory_urls: false

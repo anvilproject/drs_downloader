@@ -7,6 +7,7 @@ https://packaging.python.org/guides/distributing-packages-using-setuptools/
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
+from version import __version__
 
 here = path.abspath(path.dirname(__file__))
 
@@ -37,7 +38,7 @@ setup(
 
     # Versions should comply with PEP 440:
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.1',  # Required
+    version=__version__,  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:

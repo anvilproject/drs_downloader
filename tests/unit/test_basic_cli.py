@@ -1,10 +1,9 @@
 import json
 import os.path
-
 from click.testing import CliRunner
-
 from drs_downloader.cli import cli
-from drs_downloader.clients.mock import manifest_all_ok, manifest_bad_file_size , manifest_bad_id_for_download
+
+from drs_downloader.clients.mock import manifest_all_ok, manifest_bad_file_size, manifest_bad_id_for_download
 
 
 def test_license():
@@ -45,7 +44,9 @@ def test_mock_bad_file_size(caplog):
     # should return non zero
     assert result.exit_code != 0
     # should log an exception
-    #assert len([r for r in caplog.records if 'does not match expected size' in json.dumps(r.msg)]) == 1, caplog.records
+    # # assert (
+    #     len([r for r in caplog.records if 'does not match expected size' in json.dumps(r.msg)]) == 1, caplog.records
+    # )
 
     # leave test manifest in place if an error
     os.unlink(tsv_file.name)
@@ -61,9 +62,8 @@ def test_mock_bad_id(caplog):
 
     # create a test manifest
     tsv_file = manifest_bad_id_for_download()
-    result = runner.invoke(cli, ['mock', '--manifest_path', tsv_file.name])
+    runner.invoke(cli, ['mock', '--manifest_path', tsv_file.name])
     assert len([r for r in caplog.records if 'had missing part' in json.dumps(r.msg)]) > 0, caplog.records
 
     # leave test manifest in place if an error
     os.unlink(tsv_file.name)
-

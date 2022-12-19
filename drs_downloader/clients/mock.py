@@ -22,8 +22,6 @@ BAD_MD5 = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_MD5"))
 BAD_SIGNATURE = 'drs://' + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_SIGNATURE"))
 
 
-
-
 class MockDrsClient(DrsClient):
     """Simulate responses from server.
 
@@ -74,15 +72,14 @@ class MockDrsClient(DrsClient):
 
         length_ = size - start + 1
         # logger.info((drs_object.name, start, length_))
-        #logger.error("ERROR1 %s",drs_object)
+        # logger.error("ERROR1 %s",drs_object)
 
         if "BAD_ID" in drs_object.self_uri:
-                return None
+            return None
 
         with open(Path(f'/tmp/testing/{drs_object.name}.golden'), 'rb') as f:
             f.seek(start)
             data = f.read(length_)
-
 
         (fd, name,) = tempfile.mkstemp(prefix=f'{drs_object.name}.{start}.{size}.', suffix='.part',
                                        dir=str(destination_path))
@@ -140,11 +137,9 @@ class MockDrsClient(DrsClient):
         # simulate an incorrect size
         if object_id == INCORRECT_SIZE:
             size_ += 1000
-        
-        if object_id == BAD_ID:
-                object_id = "BAD_ID"
-                
 
+        if object_id == BAD_ID:
+            object_id = "BAD_ID"
 
         return DrsObject(
             self_uri=f"drs://{object_id}",
@@ -179,13 +174,14 @@ def manifest_bad_file_size():
     tsv_file.close()
     return tsv_file
 
+
 def manifest_bad_id_for_download():
     """Generate a test manifest, a tsv file with 2 valid drs identifiers and one that will create an incorrect file."""
-    ids_from_manifest = ['drs://' + str(uuid.uuid4()), 'drs://' + str(uuid.uuid4()),BAD_ID,'drs://' + str(uuid.uuid4())]
+    ids_from_manifest = ['drs://' + str(uuid.uuid4()), 'drs://' + str(uuid.uuid4()),
+                         BAD_ID, 'drs://' + str(uuid.uuid4())]
     tsv_file = tempfile.NamedTemporaryFile(delete=False, mode="w")
     tsv_file.write('ga4gh_drs_uri\n')
     for id_ in ids_from_manifest:
         tsv_file.write(f'{id_}\n')
     tsv_file.close()
     return tsv_file
-

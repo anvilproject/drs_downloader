@@ -56,7 +56,7 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
 
     # get ids from manifest
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
-    logger.info("IDS FROM MANIFEST ",ids_from_manifest)
+    logger.info("IDS FROM MANIFEST ", ids_from_manifest)
 
     # perform downloads with a terra drs client
     _perform_downloads(destination_dir, TerraDrsClient(), ids_from_manifest, silent)
@@ -115,17 +115,21 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
     # show results
     if not silent:
         for drs_object in drs_objects:
-            if len(drs_object.errors) == 0:
+            if len(drs_object.errors) > 0:
+                logger.error(
+                    (drs_object.name, 'ERROR', drs_object.size, len(
+                        drs_object.file_parts), drs_object.errors))
+            else:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
     at_least_one_error = False
     for drs_object in drs_objects:
         if len(drs_object.errors) > 0:
-            logger.info((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
             at_least_one_error = True
     if at_least_one_error:
-        exit(99)
+        exit(1)
 
 
 def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
@@ -168,8 +172,8 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
                 uris.append(row[uri_index])
         else:
             raise KeyError(
-                "Key format for drs_uri is bad. Make sure the column that contains the URIS has 'uri' somewhere in it,"
-                "   or the URI header matches the uri header name in the TSV file that was specified")
+                f"DRS header value '{drs_header}' not found in manifest file '{manifest_path}.'"
+                " Please specify a new value with the --drs_header flag.")
 
         for url in uris:
             if '/' in url:
@@ -178,9 +182,9 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
                 raise Exception(
                     "Check that your header name for your DRS URIS is directly above the column of your DRS URIS")
 
-        if(len(uris) != len(set(uris))):
-            raise Exception("Duplicate URIS: ",str(list(set([x for x in uris if uris.count(x) > 1]))),"found in your TSV file ")
-            
+        if (len(uris) != len(set(uris))):
+            raise Exception("Duplicate URIS: ", str(
+                list(set([x for x in uris if uris.count(x) > 1]))), "found in your TSV file ")
 
     return uris
 

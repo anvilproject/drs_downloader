@@ -43,7 +43,11 @@ class TerraDrsClient(DrsClient):
 
         token_command = "gcloud auth print-access-token"
         cmd = token_command.split(' ')
-        token = subprocess.check_output(cmd).decode("ascii")[0:-1]
+        try:
+            token = subprocess.check_output(cmd).decode("ascii")[0:-1]
+        except FileNotFoundError:
+            logger.error("gcloud not found")
+            exit(1)
         assert token, "No token retrieved."
         return token
 
@@ -89,7 +93,7 @@ class TerraDrsClient(DrsClient):
             "url": drs_object.id,
             "fields": ["accessUrl"]
         }
-        headers={
+        headers = {
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
         }
@@ -105,14 +109,14 @@ class TerraDrsClient(DrsClient):
                         cmd = account_command.split(' ')
                         account = subprocess.check_output(cmd).decode("ascii")
                         raise Exception(
-                            f"A valid URL was not returned from the server.  Please check the access for {account}\n{resp}")
+                            f"A valid URL was not returned from the server. \
+                             Please check the access for {account}\n{resp}")
                     url_ = resp['accessUrl']['url']
                     drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
                     return drs_object
                 except ClientResponseError as e:
                     drs_object.errors.append(str(e))
                     return drs_object
-              
 
     async def get_object(self, object_id: str) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
@@ -130,7 +134,7 @@ class TerraDrsClient(DrsClient):
             "url": object_id,
             "fields": ["fileName", "size", "hashes", "accessUrl"]
         }
-        headers={
+        headers = {
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
         }
@@ -161,4 +165,3 @@ class TerraDrsClient(DrsClient):
                         name=None,
                         errors=[str(e)]
                     )
-           

@@ -136,3 +136,5 @@ site/
 
 tests/fixtures/*.json
 
+# ignore temp directory
+tmp/

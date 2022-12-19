@@ -2,7 +2,6 @@ import asyncio
 import hashlib
 import logging
 import math
-import tempfile
 import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -11,8 +10,6 @@ import os
 import tqdm
 import tqdm.asyncio
 import sys
-import pdb
-
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
     DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS, DEFAULT_PART_SIZE, MB, GB
@@ -30,6 +27,7 @@ with open('logs.log', 'w') as fd:
 
 logger.addHandler(stdout_handler)
 logger.addHandler(file_handler)
+
 
 class DrsManager(ABC):
     """Manage DRSClient workload.
@@ -163,8 +161,6 @@ class DrsAsyncManager(DrsManager):
         if len(parts) > 1000:
             logger.error(f'tasks > 1000 {drs_object.name} has over 1000 parts, consider optimization. ({len(parts)})')
 
-             
-
         paths = []
         # TODO - tqdm ugly here?
         for chunk_parts in \
@@ -174,7 +170,17 @@ class DrsAsyncManager(DrsManager):
                           leave=False,
                           disable=self.disable):
             chunk_tasks = []
+            existing_chunks = []
             for start, size in chunk_parts:
+                # TODO: Check if part file exists and if so verify the expected size.
+                # If size matches the expected value then return the Path of the file_name for eventual reassembly.
+                # If size does not match then attempt to restart the download.
+                file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
+                file_path = Path(file_name)
+                if (self.check_existing_parts(file_path, start, size)):
+                    existing_chunks.append(file_path)
+                    continue
+
                 task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
                                                                           destination_path=destination_path))
                 chunk_tasks.append(task)
@@ -185,6 +191,11 @@ class DrsAsyncManager(DrsManager):
                 tqdm.tqdm(asyncio.as_completed(chunk_tasks), total=len(chunk_tasks), leave=False,
                           desc=f"    * {drs_object.name} Part", disable=self.disable)
             ]
+
+            if len(existing_chunks) > 0:
+                logger.info(f"{drs_object.name} had {len(existing_chunks)} existing parts.")
+
+            chunk_paths.extend(existing_chunks)
             # something bad happened
             if None in chunk_paths:
                 logger.error(f"{drs_object.name} had missing part.")
@@ -194,7 +205,7 @@ class DrsAsyncManager(DrsManager):
 
         drs_object.file_parts = paths
 
-        i=1
+        i = 1
         filename = f"{drs_object.name}"
         original_file_name = Path(filename)
         while True:
@@ -355,6 +366,20 @@ class DrsAsyncManager(DrsManager):
             DrsObjects updated with _file_parts
 
         """
+
+        # TODO: Same process download recovery (e.g. network outage while process is running).
+        filtered_objects = self.filter_existing_files(drs_objects, destination_path)
+        if len(filtered_objects) < len(drs_objects):
+            complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
+            for obj in complete_objects:
+                logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
+
+            if len(filtered_objects) == 0:
+                logger.info(f"All DRS objects already present in {destination_path}.")
+                return
+
+            drs_objects = filtered_objects
+
         total_batches = len(drs_objects) / self.max_simultaneous_downloaders
         # if fractional, add 1
         if math.ceil(total_batches) - total_batches > 0:
@@ -384,30 +409,70 @@ class DrsAsyncManager(DrsManager):
         # Now that we have the objects to download, we have an opportunity to shape the downloads
         # e.g. are the smallest files first?  tweak MAX_* to optimize per workload
 
-       # if len(drs_objects) == 1:
-        #    self.max_simultaneous_part_handlers = 50
-         #   self.part_size = 64 * MB
-          #  self.max_simultaneous_downloaders = 10
+        # TODO: If part sizes changed here, would this result in an error in test recovery?
+        # Test existing captured part if part size changes between runs, either by user or by optimizer.
 
-        if any(drs_object.size > (1 * GB) for drs_object in drs_objects):
+        if len(drs_objects) == 1:
+            self.max_simultaneous_part_handlers = 50
+            self.part_size = 64 * MB
+            self.max_simultaneous_downloaders = 10
+
+        elif any(drs_object.size > (1 * GB) for drs_object in drs_objects):
             self.max_simultaneous_part_handlers = 10
             self.part_size = 10 * MB
             self.max_simultaneous_downloaders = 10
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
-            self.part_size = 5 * MB
-            self.max_simultaneous_part_handlers = 1
+            self.part_size = 1 * MB
+            self.max_simultaneous_part_handlers = 2
             self.max_simultaneous_downloaders = 10
             logger.error('part_size=%s', self.part_size)
             logger.error('max_simul_part_handlers=%s', self.max_simultaneous_part_handlers)
 
-            
         else:
             self.part_size = 10 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
 
-           
-        
-    
         return drs_objects
+
+    def filter_existing_files(self, drs_objects: List[DrsObject], destination_path: Path) -> List[DrsObject]:
+        """Remove any DRS objects from a given list if they are already exist in the destination directory.
+
+        Args:
+            drs_objects (List[DrsObject]): The DRS objects from the manifest (some may already be downloaded)
+            destination_path (Path): Download destination that may contain partially downloaded files
+
+        Returns:
+            List[DrsObject]: The DRS objects that have yet to be downloaded
+        """
+
+        filtered_objects = [drs for drs in drs_objects if drs.name not in os.listdir(destination_path)]
+
+        return filtered_objects
+
+    def check_existing_parts(self, file_path: Path, start: int, size: int) -> bool:
+        """Checks if any file parts have already been downloaded. If a file part was partially downloaded then it
+           prompts a new download process for that part.
+
+        Args:
+            file_path (Path): Path of the given file part (ex. HG00536.final.cram.crai.1048577.1244278.part)
+            start (int): Beginning byte of the file part (ex. 1048577)
+            size (int): Final byte of the file part (ex. 1244278)
+
+        Returns:
+            bool: True if the file part exists in the destination and has the expected file size, False otherwise
+        """
+
+        if (file_path.exists()):
+            expected_size = size - start
+            if (start == 0):
+                expected_size += 1
+
+            actual_size = file_path.stat().st_size
+            sizes_match = actual_size == expected_size
+            if sizes_match is True:
+                logger.info(f"{file_path.name} exists and has expected size. Skipping download.")
+                return True
+
+        return False
