@@ -32,7 +32,9 @@ def cli():
 @click.option('--drs_header', default='ga4gh_drs_uri', show_default=True,
               help='The column header in the TSV file associated with the DRS URIs.'
                    'Example: pfb:ga4gh_drs_uri')
-def mock(silent: bool, destination_dir: str, manifest_path, drs_header):
+@click.option('--replace', default=False,is_flag=True, show_default=True,help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
+              'Example: True')
+def mock(silent: bool, destination_dir: str, manifest_path, drs_header, replace:bool):
     """Generate test files locally, without the need for server."""
 
     #
@@ -40,7 +42,7 @@ def mock(silent: bool, destination_dir: str, manifest_path, drs_header):
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
 
     # perform downloads with a mock drs client
-    _perform_downloads(destination_dir, MockDrsClient(), ids_from_manifest, silent)
+    _perform_downloads(destination_dir, MockDrsClient(), ids_from_manifest, silent,replace=replace)
 
 
 @cli.command()
@@ -51,15 +53,17 @@ def mock(silent: bool, destination_dir: str, manifest_path, drs_header):
               help="Path to manifest tsv.")
 @click.option('--drs_header', default=None, help='The column header in the TSV file associated with the DRS URIs.'
               'Example: pfb:ga4gh_drs_uri')
-def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: str):
+@click.option('--replace', default=False,is_flag=True, show_default=True, help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
+              'Example: True')
+def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: str,replace: bool):
     """Copy files from terra.bio"""
 
     # get ids from manifest
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
-    logger.info("IDS FROM MANIFEST ", ids_from_manifest)
+    logger.info("IDS FROM MANIFEST %s", ids_from_manifest)
 
     # perform downloads with a terra drs client
-    _perform_downloads(destination_dir, TerraDrsClient(), ids_from_manifest, silent)
+    _perform_downloads(destination_dir, TerraDrsClient(), ids_from_manifest=ids_from_manifest, silent=silent, replace=replace)
 
 
 @cli.command()
@@ -75,7 +79,9 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
               help='Gen3 credentials file')
 @click.option('--endpoint', show_default=True, required=True,
               help='Gen3 endpoint')
-def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_header: str, api_key_path: str, endpoint: str):
+@click.option('--replace',default=False,is_flag=True, show_default=True, help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
+              'Example: True')
+def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_header: str, api_key_path: str, endpoint: str, replace: bool):
     """Copy files from gen3 server."""
     # read from manifest
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
@@ -83,10 +89,10 @@ def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_header: str
     _perform_downloads(destination_dir,
                        Gen3DrsClient(api_key_path=api_key_path, endpoint=endpoint),
                        ids_from_manifest,
-                       silent)
+                       silent,replace=replace)
 
 
-def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
+def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, replace: bool):
     """Common helper method to run downloads."""
     # verify parameters
     if destination_dir:
@@ -110,7 +116,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
             total=total_batches,
             desc="TOTAL_DOWNLOAD_PROGRESS", leave=True):
 
-        drs_manager.download(chunk_of_drs_objects, destination_dir)
+        drs_manager.download(chunk_of_drs_objects, destination_dir,replace=replace)
 
     # show results
     if not silent:

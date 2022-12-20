@@ -21,10 +21,13 @@ logger = logging.getLogger()
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setLevel(logging.DEBUG)
 
+
 file_handler = logging.FileHandler('logs.log')
+file_handler.setLevel(logging.NOTSET)
+
 with open('logs.log', 'w') as fd:
     pass
-
+logging.getLogger().setLevel(logging.INFO)
 logger.addHandler(stdout_handler)
 logger.addHandler(file_handler)
 
@@ -159,7 +162,7 @@ class DrsAsyncManager(DrsManager):
             parts.append((start, size, ))
 
         if len(parts) > 1000:
-            logger.error(f'tasks > 1000 {drs_object.name} has over 1000 parts, consider optimization. ({len(parts)})')
+            logger.error('task %s  has over 1000 parts, consider optimization.%d',drs_object.name ,len(parts))
 
         paths = []
         # TODO - tqdm ugly here?
@@ -240,6 +243,7 @@ class DrsAsyncManager(DrsManager):
         expected_checksum = drs_object.checksums[0].checksum
         if expected_checksum != actual_checksum:
             msg = f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}"
+            logger.error(f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}")
             drs_object.errors.append(msg)
 
         if drs_object.size != actual_size:
@@ -355,7 +359,7 @@ class DrsAsyncManager(DrsManager):
 
         return drs_objects
 
-    def download(self, drs_objects: List[DrsObject], destination_path: Path) -> List[DrsObject]:
+    def download(self, drs_objects: List[DrsObject], destination_path: Path, replace: bool) -> List[DrsObject]:
         """Split the drs_objects into manageable sizes, download the files.
 
         Args:
@@ -368,8 +372,8 @@ class DrsAsyncManager(DrsManager):
         """
 
         # TODO: Same process download recovery (e.g. network outage while process is running).
-        filtered_objects = self.filter_existing_files(drs_objects, destination_path)
-        if len(filtered_objects) < len(drs_objects):
+        filtered_objects = self.filter_existing_files(drs_objects, destination_path,replace=replace)
+        if len(filtered_objects) < len(drs_objects) and replace is None:
             complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
             for obj in complete_objects:
                 logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
@@ -436,7 +440,7 @@ class DrsAsyncManager(DrsManager):
 
         return drs_objects
 
-    def filter_existing_files(self, drs_objects: List[DrsObject], destination_path: Path) -> List[DrsObject]:
+    def filter_existing_files(self, drs_objects: List[DrsObject], destination_path: Path, replace: bool) -> List[DrsObject]:
         """Remove any DRS objects from a given list if they are already exist in the destination directory.
 
         Args:
@@ -446,6 +450,10 @@ class DrsAsyncManager(DrsManager):
         Returns:
             List[DrsObject]: The DRS objects that have yet to be downloaded
         """
+
+        logger.info("VALUE OF REPLACE %s",replace)
+        if(replace == True): 
+            return drs_objects
 
         filtered_objects = [drs for drs in drs_objects if drs.name not in os.listdir(destination_path)]
 
@@ -464,6 +472,7 @@ class DrsAsyncManager(DrsManager):
             bool: True if the file part exists in the destination and has the expected file size, False otherwise
         """
 
+            
         if (file_path.exists()):
             expected_size = size - start
             if (start == 0):

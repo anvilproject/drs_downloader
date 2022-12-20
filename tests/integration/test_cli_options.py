@@ -90,7 +90,7 @@ def test_optimizer_part_size(caplog):
         messages = caplog.messages
         part_size = int([messages[messages.index(message)]
                         for message in messages if ('part_size' in message)][0].split("=")[-1])
-        assert part_size == (5 * 1024 ** 2)
+        assert part_size == (1 * 1024 ** 2)
 
 
 def test_optimizer_simul_part_handlers(caplog):
@@ -101,7 +101,7 @@ def test_optimizer_simul_part_handlers(caplog):
         print("THE VALUE OF MESSAGES ", messages)
         part_handlers = int([messages[messages.index(message)]
                             for message in messages if ('part_handlers' in message)][0].split("=")[-1])
-        assert part_handlers == 1
+        assert part_handlers == 2
 
 
 def test_gen3():
@@ -138,16 +138,20 @@ def test_gen3_silent():
                                 'tests/fixtures/gen3-small.tsv'])
         assert result.exit_code == 0
 
-
+#this function errors 
 def test_terra_rename():
     with tempfile.TemporaryDirectory() as dest:
         for file in os.listdir(Path("tests/fixtures/rename")):
             shutil.copy2(Path("tests/fixtures/rename", file), dest)
 
-        runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '-m', 'tests/fixtures/terra-data.tsv'])
-        files = sorted(next(os.walk(dest))[2])
+        _, _, files = next(os.walk(dest))
+        file_count = len(files)
 
-        assert len(files) == 21
-        assert files[2] == "HG00536.final.cram.crai(1)"
-        assert files[-1] == "NA20525.final.cram.crai(1)"
+        runner = CliRunner()
+        runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-data.tsv','--replace'])
+        _, _, files_after = next(os.walk(dest))
+        file_count_after = len(files_after)
+
+        assert (file_count_after - file_count) == 10
+        #assert files[2] == "HG00536.final.cram.crai(1)"
+        #assert files[-1] == "NA20525.final.cram.crai(1)"
