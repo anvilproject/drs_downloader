@@ -15,6 +15,9 @@ plugins:
       scripts:
         - docs/gen_ref_pages.py
   - mkdocstrings
+  - section-index
+  - literate-nav:
+      nav_file: SUMMARY.md
   
 theme:
   name: "material"

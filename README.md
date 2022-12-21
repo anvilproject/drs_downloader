@@ -9,15 +9,15 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 
 - [Installation](#installation)
-    - [Checksum Verification](#checksum-verification)
-    - [Requirements](#requirements)
-        - [Authentication](#authentication)
+  - [Checksum Verification](#checksum-verification)
+  - [Requirements](#requirements)
+    - [Authentication](#authentication)
 - [Usage](#usage)
-    - [Quick Start](#quick-start)
-        - [Arguments](#arguments)
-    - [Basic Example](#basic-example)
-    - [Example with a Different Header Value](#example-with-a-different-header-value)
-    - [Help/Additional Options](#helpadditional-options)
+  - [Quick Start](#quick-start)
+    - [Arguments](#arguments)
+  - [Basic Example](#basic-example)
+  - [Example with a Different Header Value](#example-with-a-different-header-value)
+  - [Help/Additional Options](#helpadditional-options)
 - [Credits](#credits)
 
 ## Installation
@@ -191,4 +191,4 @@ Options:
 
 ## Credits
 
-This project is developed in partnership between The AnVIL Project, the Broad Institute, and the Ellrott Lab at Oregon Health & Science University. Development is lead by [Brian Walsh](https://github.com/bwalsh) with contributions from [Matthew Peterkort](https://github.com/matthewpeterkort) and [Liam Beckman](https://github.com/lbeckman314). Special thanks to Michael Baumann at the Broad Institute for guidance and development recommendations.
+This project is developed in partnership between The AnVIL Project, the Broad Institute, and the Ellrott Lab at Oregon Health & Science University. Development is lead by [Brian Walsh](https://github.com/bwalsh) with contributions from [Matthew Peterkort](https://github.com/matthewpeterkort) and [Liam Beckman](https://github.com/lbeckman314). Special thanks to [Michael Baumann](https://github.com/mikebaumann) at the Broad Institute for guidance and development recommendations.
