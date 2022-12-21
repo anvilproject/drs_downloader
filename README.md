@@ -108,7 +108,7 @@ Usage: drs_download terra [OPTIONS]
 
 Options:
   -s, --silent                Display nothing.
-  -d, --destination_dir TEXT  Destination directory.  [default: os.getcwd()]
+  -d, --destination_dir TEXT  Destination directory.  [default: current directory]
   -m, --manifest_path TEXT    Path to manifest tsv.  [default:
                               tests/fixtures/terra-data.tsv]
   --help                      Show this message and exit.
