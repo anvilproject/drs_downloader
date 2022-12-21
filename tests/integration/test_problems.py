@@ -10,7 +10,7 @@ def test_terra_bad_tsv():
     """The terra command should execute with an error."""
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-data-bad.tsv'])
+        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data-bad.tsv'])
         assert result.exit_code != 0
 
 #problems here
@@ -39,9 +39,9 @@ def test_gen3_bad_credentials(caplog):
                                 dest,
                                 '--endpoint',
                                 'https://development.aced-idp.org',
-                                '--api_key_path',
+                                '--api_key-path',
                                 'tests/fixtures/bad_credentials.json',
-                                '--manifest_path',
+                                '--manifest-path',
                                 'tests/fixtures/gen3-small.tsv'])
 
         if len([string for string in caplog.messages if ("Invalid access token in" in string)]) > 0:
@@ -52,7 +52,7 @@ def test_terra_good_gcloud(caplog):
     """The gen3 command should execute with an error."""
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
         messages = caplog.messages
         assert any(("google-cloud-sdk" in message for message in messages))
 
@@ -71,7 +71,7 @@ def test_terra_bad_gcloud(caplog):
 
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner(env=dict_str)
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
         messages = caplog.messages
         # print("THE VALUE OF MESSAGES ",messages)
         assert not any(("google-cloud-sdk" in message for message in messages))
@@ -86,9 +86,9 @@ def test_gen3_uri_not_found(caplog):
                        dest,
                        '--endpoint',
                        'https://development.aced-idp.org',
-                       '--api_key_path',
+                       '--api-key-path',
                        'tests/fixtures/credentials.json',
-                       '--manifest_path',
+                       '--manifest-path',
                        'tests/fixtures/gen3_unauthorized_uris.tsv'])
 
         messages = caplog.messages
@@ -99,7 +99,7 @@ def test_gen3_uri_not_found(caplog):
 def test_terra_uri_not_found(caplog):
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest_path', 'tests/fixtures/bad_terra_uris.tsv'])
+        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/bad_terra_uris.tsv'])
         messages = caplog.messages
         assert any(["Not Found" in message for message in messages])
 
@@ -113,9 +113,9 @@ def test_gen3_weak_creds(caplog):
                        dest,
                        '--endpoint',
                        'https://development.aced-idp.org',
-                       '--api_key_path',
+                       '--api-key-path',
                        'tests/fixtures/weak_creds.json',
-                       '--manifest_path',
+                       '--manifest-path',
                        'tests/fixtures/gen3-small.tsv'])
         messages = caplog.messages
         assert any(["UNAUTHORIZED" in message for message in messages])

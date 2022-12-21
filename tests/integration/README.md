@@ -17,3 +17,7 @@ Tests in this folder require a drs server with a known population of data object
 * workflow mgt - manifest with 1 file
 * workflow mgt - any file in manifest > 1 GB
 
+
+* get 50 MB file and large file URIS for testing 
+
+

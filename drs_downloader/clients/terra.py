@@ -13,6 +13,7 @@ from aiohttp import ClientResponseError
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
 logger = logging.getLogger(__name__)
+logging.getLogger().setLevel(logging.INFO)
 
 
 class TerraDrsClient(DrsClient):
@@ -41,7 +42,7 @@ class TerraDrsClient(DrsClient):
         if gcloud_info.account is None:
             raise Exception("No Google Cloud account found.")
 
-        token_command = "gcloud auth print-access-token"
+        token_command = "gcloud auth application-default print-access-token"
         cmd = token_command.split(' ')
         try:
             token = subprocess.check_output(cmd).decode("ascii")[0:-1]
@@ -55,7 +56,11 @@ class TerraDrsClient(DrsClient):
         login_command = "gcloud info --format=json"
         cmd = login_command.split(' ')
         output = subprocess.check_output(cmd)
-        logger.error(output)
+        #logger.info("GCLOUD INFO %s",output)
+        if "google-cloud-sdk" in str(output):
+            logger.info("google-cloud-sdk credentials working")
+        else:
+            logger.info("google credentials are broken")
 
         js = json.loads(output)
 
@@ -132,7 +137,7 @@ class TerraDrsClient(DrsClient):
         """
         data = {
             "url": object_id,
-            "fields": ["fileName", "size", "hashes", "accessUrl"]
+            "fields": ["fileName", "size", "hashes"]
         }
         headers = {
             'authorization': 'Bearer ' + self.token,
@@ -153,9 +158,7 @@ class TerraDrsClient(DrsClient):
                         size=size_,
                         checksums=[Checksum(checksum=md5_, type='md5')],
                         id=object_id,
-                        name=name_,
-                        access_methods=[AccessMethod(access_url="", type='gs')]
-                    )
+                        name=name_)
                 except ClientResponseError as e:
                     return DrsObject(
                         self_uri=object_id,

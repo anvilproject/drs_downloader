@@ -25,7 +25,7 @@ def test_bad_part(caplog):
 
         runner = CliRunner()
         result = runner.invoke(
-            cli, ['terra', '-d', dest, '--manifest_path',  'tests/fixtures/terra-data.tsv']
+            cli, ['terra', '-d', dest, '--manifest-path',  'tests/fixtures/terra-data.tsv']
         )
         assert result.exit_code == 1
 

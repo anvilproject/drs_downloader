@@ -21,12 +21,13 @@ logger = logging.getLogger()
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setLevel(logging.DEBUG)
 
+file_handler = logging.FileHandler('drs_downloader.log')
+file_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s %(message)s', datefmt="%Y-%m-%dT%H:%M:%S %Z")
+# logging.Formatter.converter = gmtime
+file_handler.setFormatter(formatter)
+stdout_handler.setFormatter(formatter)
 
-file_handler = logging.FileHandler('logs.log')
-file_handler.setLevel(logging.NOTSET)
-
-with open('logs.log', 'w') as fd:
-    pass
 logging.getLogger().setLevel(logging.INFO)
 logger.addHandler(stdout_handler)
 logger.addHandler(file_handler)
@@ -162,7 +163,13 @@ class DrsAsyncManager(DrsManager):
             parts.append((start, size, ))
 
         if len(parts) > 1000:
-            logger.error('task %s  has over 1000 parts, consider optimization.%d',drs_object.name ,len(parts))
+            logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
+                ({len(parts)})')
+        
+        if(drs_object.size > 20* MB):
+            self.disable = False
+        else:
+            self.disable=True
 
         paths = []
         # TODO - tqdm ugly here?
@@ -180,13 +187,22 @@ class DrsAsyncManager(DrsManager):
                 # If size does not match then attempt to restart the download.
                 file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
                 file_path = Path(file_name)
+
+                
+
                 if (self.check_existing_parts(file_path, start, size)):
                     existing_chunks.append(file_path)
                     continue
+                    
+                
+                #TODO after turning it off logger a successful downlaod somewhere here so that the user still knows that it finnished
 
                 task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
                                                                           destination_path=destination_path))
                 chunk_tasks.append(task)
+
+               
+
 
             chunk_paths = [
                 await f
@@ -205,11 +221,14 @@ class DrsAsyncManager(DrsManager):
                 return drs_object
 
             paths.extend(chunk_paths)
+            
+        if(not None in chunk_paths and len(existing_chunks) == 0 and self.disable == True):
+            logger.info("%s Downloaded sucessfully",drs_object.name)
 
         drs_object.file_parts = paths
 
         i = 1
-        filename = f"{drs_object.name}"
+        filename = f"{drs_object.name}" or drs_object.access_methods[0].access_url.split("/")[-1].split('?')[0]
         original_file_name = Path(filename)
         while True:
             if os.path.isfile(destination_path.joinpath(filename)):
@@ -341,13 +360,10 @@ class DrsAsyncManager(DrsManager):
 
         drs_objects = []
 
-        total_batches = len(object_ids) / self.max_simultaneous_object_retrievers
+        total_batches = math.ceil(len(object_ids) / self.max_simultaneous_object_retrievers)
         # rounding
         # this would imply that if batch count is 9.3, and you round down the last .3 is never
         # actually downloaded since there are only 9 batches. math.ciel would round up if there is a decimal at all
-        if math.ceil(total_batches) - total_batches > 0:
-            total_batches += 1
-            total_batches = int(total_batches)
 
         current = 0
 
@@ -371,9 +387,8 @@ class DrsAsyncManager(DrsManager):
 
         """
 
-        # TODO: Same process download recovery (e.g. network outage while process is running).
         filtered_objects = self.filter_existing_files(drs_objects, destination_path,replace=replace)
-        if len(filtered_objects) < len(drs_objects) and replace is None:
+        if len(filtered_objects) < len(drs_objects):
             complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
             for obj in complete_objects:
                 logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
@@ -383,12 +398,7 @@ class DrsAsyncManager(DrsManager):
                 return
 
             drs_objects = filtered_objects
-
-        total_batches = len(drs_objects) / self.max_simultaneous_downloaders
-        # if fractional, add 1
-        if math.ceil(total_batches) - total_batches > 0:
-            total_batches += 1
-
+       
         current = 0
         updated_drs_objects = []
 
@@ -420,23 +430,28 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
             self.max_simultaneous_downloaders = 10
+            logger.info('part_size=%s', self.part_size)
 
-        elif any(drs_object.size > (1 * GB) for drs_object in drs_objects):
+        elif any(True for drs_object in drs_objects if (int(drs_object.size) > GB)):
             self.max_simultaneous_part_handlers = 10
-            self.part_size = 10 * MB
+            self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
+            logger.info('part_size=%s', self.part_size)
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
             self.part_size = 1 * MB
             self.max_simultaneous_part_handlers = 2
             self.max_simultaneous_downloaders = 10
-            logger.error('part_size=%s', self.part_size)
-            logger.error('max_simul_part_handlers=%s', self.max_simultaneous_part_handlers)
+            logger.info('part_size=%s', self.part_size)
+            logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
 
         else:
             self.part_size = 10 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
+            logger.info('part_size=%s', self.part_size)
+            logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
+
 
         return drs_objects
 
@@ -451,7 +466,7 @@ class DrsAsyncManager(DrsManager):
             List[DrsObject]: The DRS objects that have yet to be downloaded
         """
 
-        logger.info("VALUE OF REPLACE %s",replace)
+        #logger.info("VALUE OF REPLACE %s",replace)
         if(replace == True): 
             return drs_objects
 

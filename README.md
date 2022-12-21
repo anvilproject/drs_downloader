@@ -79,7 +79,7 @@ The downloader requires that a Google Cloud project be designated as the billing
 Upon running the following `gcloud` command a browser window will open in which you may choose the Google account used for the billing project:
 
 ```sh
-$ gcloud auth login
+$ gcloud auth application-default login
 Your browser has been opened to visit:
 
     https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=...

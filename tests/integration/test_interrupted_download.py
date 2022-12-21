@@ -4,7 +4,8 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-
+import sys 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from click.testing import CliRunner
 
 from drs_downloader.cli import _extract_tsv_info, cli
@@ -83,15 +84,13 @@ def test_check_existing_files():
     drs_manager, drs_objects = _get_drs_manager()
 
     with tempfile.TemporaryDirectory() as dest:
-        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest)
+        replace = False
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest,replace)
         assert len(filtered_objects) == len(drs_objects)
 
         shutil.copy2(PARTS / "HG00536.final.cram.crai", dest)
-        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest)
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace)
         assert len(filtered_objects) == len(drs_objects) - 1
-
-
-def test_existing_parts():
 
     complete_parts = [
         'HG00536.final.cram.crai.0.1048576.part',

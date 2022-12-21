@@ -4,6 +4,7 @@ from typing import List
 import math
 import tqdm
 import click
+import os
 import csv
 
 from drs_downloader.clients.gen3 import Gen3DrsClient
@@ -13,9 +14,10 @@ from drs_downloader.manager import DrsAsyncManager
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
 
-logging.basicConfig(format='%(asctime)s %(message)s',  encoding='utf-8', level=logging.INFO)
-logger = logging.getLogger(__name__)  # these control our simulation
+logger = logging.getLogger()  # these control our simulation
 
+with open('drs_downloader.log', 'w') as fd:
+    pass
 
 @click.group()
 def cli():
@@ -25,14 +27,14 @@ def cli():
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
-@click.option("--destination_dir", "-d", show_default=True, default='/tmp/testing',
+@click.option("--destination-dir", "-d", show_default=True, default= os.getcwd(),
               help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True,
+@click.option("--manifest-path", "-m", show_default=True,
               help="Path to manifest tsv.")
-@click.option('--drs_header', default='ga4gh_drs_uri', show_default=True,
+@click.option('--drs-header', default='ga4gh_drs_uri', show_default=True,
               help='The column header in the TSV file associated with the DRS URIs.'
                    'Example: pfb:ga4gh_drs_uri')
-@click.option('--replace', default=False,is_flag=True, show_default=True,help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
+@click.option('--replace',"-r", is_flag=True, default=False, show_default=True,help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
               'Example: True')
 def mock(silent: bool, destination_dir: str, manifest_path, drs_header, replace:bool):
     """Generate test files locally, without the need for server."""
@@ -47,20 +49,21 @@ def mock(silent: bool, destination_dir: str, manifest_path, drs_header, replace:
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
-@click.option("--destination_dir", "-d", show_default=True,
-              default="/tmp/testing", help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True,
+@click.option("--destination-dir", "-d", show_default=True,
+              default=os.getcwd(), help="Destination directory.")
+@click.option("--manifest-path", "-m", show_default=True,
               help="Path to manifest tsv.")
-@click.option('--drs_header', default=None, help='The column header in the TSV file associated with the DRS URIs.'
+@click.option('--drs-header', default=None, help='The column header in the TSV file associated with the DRS URIs.'
               'Example: pfb:ga4gh_drs_uri')
-@click.option('--replace', default=False,is_flag=True, show_default=True, help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
+@click.option('--replace', default=False,is_flag=True, help='This flag is used to specify wether or not to download the file again if it already exists in the directory'
               'Example: True')
 def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: str,replace: bool):
     """Copy files from terra.bio"""
 
     # get ids from manifest
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_header)
-    logger.info("IDS FROM MANIFEST %s", ids_from_manifest)
+    if not silent:
+        logger.info("IDS FROM MANIFEST %s", ids_from_manifest)
 
     # perform downloads with a terra drs client
     _perform_downloads(destination_dir, TerraDrsClient(), ids_from_manifest=ids_from_manifest, silent=silent, replace=replace)
@@ -68,14 +71,14 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_header: st
 
 @cli.command()
 @click.option("--silent", "-s", is_flag=True, show_default=True, default=False, help="Display nothing.")
-@click.option("--destination_dir", "-d", show_default=True,
-              default="/tmp/testing", help="Destination directory.")
-@click.option("--manifest_path", "-m", show_default=True,
+@click.option("--destination-dir", "-d", show_default=True,
+              default=os.getcwd(), help="Destination directory.")
+@click.option("--manifest-path", "-m", show_default=True,
               help="Path to manifest tsv.")
-@click.option('--drs_header', default='ga4gh_drs_uri', show_default=True,
+@click.option('--drs-header', default='ga4gh_drs_uri', show_default=True,
               help='The column header in the TSV file associated with the DRS URIs.'
                    'Example: pfb:ga4gh_drs_uri')
-@click.option('--api_key_path', show_default=True,
+@click.option('--api-key-path', show_default=True,
               help='Gen3 credentials file')
 @click.option('--endpoint', show_default=True, required=True,
               help='Gen3 endpoint')
@@ -98,6 +101,8 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, r
     if destination_dir:
         destination_dir = Path(destination_dir)
         destination_dir.mkdir(parents=True, exist_ok=True)
+    if not silent:
+        logger.info(f"Downloading to: {destination_dir.resolve()}")
     # create a manager
     drs_manager = DrsAsyncManager(drs_client=drs_client, show_progress=not silent)
 
@@ -121,21 +126,18 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, r
     # show results
     if not silent:
         for drs_object in drs_objects:
-            if len(drs_object.errors) > 0:
-                logger.error(
-                    (drs_object.name, 'ERROR', drs_object.size, len(
-                        drs_object.file_parts), drs_object.errors))
-            else:
+            if len(drs_object.errors) == 0:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
-    at_least_one_error = False
-    for drs_object in drs_objects:
-        if len(drs_object.errors) > 0:
-            logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-            at_least_one_error = True
-    if at_least_one_error:
-        exit(1)
+        at_least_one_error = False
+        for drs_object in drs_objects:
+            if len(drs_object.errors) > 0:
+                logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
+                at_least_one_error = True
+        if at_least_one_error:
+            exit(1)
+
 
 
 def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
