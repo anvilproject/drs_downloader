@@ -148,7 +148,6 @@ class TerraDrsClient(DrsClient):
                     checksums=[Checksum(checksum=md5_, type='md5')],
                     id=object_id,
                     name=name_,
-                    access_methods=[AccessMethod(access_url="", type='gs')]
                 )
             except ClientResponseError as e:
                 return DrsObject(

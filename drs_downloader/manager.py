@@ -17,17 +17,20 @@ from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_M
 
 from drs_downloader.models import DrsClient, DrsObject
 
+
 logger = logging.getLogger()
 
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setLevel(logging.DEBUG)
 
-file_handler = logging.FileHandler('logs.log')
-file_handler.setLevel(logging.NOTSET)
+file_handler = logging.FileHandler('drs_downloader.log')
+file_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s %(message)s', datefmt="%Y-%m-%dT%H:%M:%S %Z")
+# logging.Formatter.converter = gmtime
+file_handler.setFormatter(formatter)
+stdout_handler.setFormatter(formatter)
 
-with open('logs.log', 'w') as fd:
-    pass
-
+logging.getLogger().setLevel(logging.INFO)
 logger.addHandler(stdout_handler)
 logger.addHandler(file_handler)
 
@@ -381,24 +384,24 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
             self.max_simultaneous_downloaders = 10
-            logger.error('part_size=%s', self.part_size)
+            logger.info('part_size=%s', self.part_size)
 
         elif any(True for drs_object in drs_objects if (int(drs_object.size) > GB)):
             self.max_simultaneous_part_handlers = 10
             self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
-            logger.error('part_size=%s', self.part_size)
+            logger.info('part_size=%s', self.part_size)
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
             self.part_size = 5 * MB
             self.max_simultaneous_part_handlers = 1
             self.max_simultaneous_downloaders = 10
-            logger.error('part_size=%s', self.part_size)
+            logger.info('part_size=%s', self.part_size)
 
         else:
             self.part_size = 10 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
-            logger.error('part_size=%s', self.part_size)
+            logger.info('part_size=%s', self.part_size)
 
         return drs_objects

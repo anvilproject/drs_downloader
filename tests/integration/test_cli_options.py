@@ -1,4 +1,3 @@
-import logging
 import os
 import subprocess
 
@@ -7,8 +6,7 @@ import time
 from drs_downloader.cli import cli
 
 
-def test_terra(caplog, tmp_path):
-    caplog.set_level(logging.INFO)
+def test_terra(tmp_path, caplog):
 
     runner = CliRunner()
     result = runner.invoke(cli, ['terra', '-d', tmp_path, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
@@ -40,6 +38,26 @@ def test_terra_default_cwd():
     assert (post_file_count - pre_file_count) == 10
 
 
+def test_terra_different_header(tmp_path, caplog):
+    runner = CliRunner()
+    result = runner.invoke(cli, ['terra', '-d', tmp_path, '--manifest-path',
+                                 'tests/fixtures/terra-different-header.tsv', '--drs-column-name', 'drs_uri'])
+    assert result.exit_code == 0
+
+    files = sorted(os.listdir(tmp_path))
+    assert len(files) == 10
+    assert files[0] == "HG00536.final.cram.crai"
+    assert files[9] == "NA20525.final.cram.crai"
+
+    result = runner.invoke(cli, ['terra', '-d', tmp_path, '--manifest-path',
+                                 'tests/fixtures/terra-different-header.tsv', '--drs-column-name', 'foo'])
+    assert result.exit_code == 1
+    assert (
+        "DRS header value 'foo' not found in manifest file tests/fixtures/terra-different-header.tsv."
+        in result.exception.args[0]
+    )
+
+
 def test_terra_silent():
     """The terra command should execute without error."""
     runner = CliRunner()
@@ -48,7 +66,7 @@ def test_terra_silent():
 
 
 def test_optimizer_part_size_large_file():
-    dir = os.path.realpath('logs.log')
+    dir = os.path.realpath('drs_downloader.log')
     result = subprocess.Popen(['drs_download', 'terra', '--manifest-path', 'tests/fixtures/mixed_file_sizes.tsv'])
     time.sleep(5)
     result.kill()

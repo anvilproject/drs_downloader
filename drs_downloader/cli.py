@@ -14,8 +14,10 @@ from drs_downloader.manager import DrsAsyncManager
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
 
-logging.basicConfig(format='%(asctime)s %(message)s',  encoding='utf-8', level=logging.INFO)
-logger = logging.getLogger(__name__)  # these control our simulation
+logger = logging.getLogger()
+
+with open('drs_downloader.log', 'w') as fd:
+    pass
 
 
 @click.group()
@@ -95,7 +97,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest,  silent):
         destination_dir.mkdir(parents=True, exist_ok=True)
 
     if not silent:
-        logger.info("Downloading to: %s", destination_dir)
+        logger.info(f"Downloading to: {destination_dir.resolve()}")
 
     # create a manager
     drs_manager = DrsAsyncManager(drs_client=drs_client, show_progress=not silent)
@@ -167,14 +169,10 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
             for row in tsv_file:
                 uris.append(row[uri_index])
 
-        # add url to urls list
-        if header is not None:
-            for row in tsv_file:
-                uris.append(row[uri_index])
         else:
             raise KeyError(
-                "Key format for drs_uri is bad. Make sure the column that contains the URIS has 'uri' somewhere in it,"
-                "   or the URI header matches the uri header name in the TSV file that was specified")
+                f"DRS header value '{drs_header}' not found in manifest file {manifest_path}."
+                " Please specify a new value with the --drs-column-name flag.")
 
         for url in uris:
             if 'drs://' in url:
