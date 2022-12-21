@@ -1,17 +1,16 @@
+from tests import MANIFESTS, PARTS, INTERRUPTED_DOWNLOAD, COMPLETE_DOWNLOAD
+from drs_downloader.manager import DrsAsyncManager
+from drs_downloader.clients.terra import TerraDrsClient
+from drs_downloader.cli import _extract_tsv_info, cli
+from click.testing import CliRunner
 import filecmp
 import logging
 import os
 import shutil
 import tempfile
 from pathlib import Path
-import sys 
+import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from click.testing import CliRunner
-
-from drs_downloader.cli import _extract_tsv_info, cli
-from drs_downloader.clients.terra import TerraDrsClient
-from drs_downloader.manager import DrsAsyncManager
-from tests import MANIFESTS, PARTS, INTERRUPTED_DOWNLOAD, COMPLETE_DOWNLOAD
 
 
 def test_interrupted_download(caplog):
@@ -85,7 +84,7 @@ def test_check_existing_files():
 
     with tempfile.TemporaryDirectory() as dest:
         replace = False
-        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest,replace)
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace)
         assert len(filtered_objects) == len(drs_objects)
 
         shutil.copy2(PARTS / "HG00536.final.cram.crai", dest)

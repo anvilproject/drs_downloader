@@ -1,6 +1,8 @@
 import json
 import os.path
+
 from click.testing import CliRunner
+
 from drs_downloader.cli import cli
 import tempfile
 
@@ -21,7 +23,7 @@ def test_mock_all_ok(number_of_object_ids=10):
         tsv_file = manifest_all_ok(number_of_object_ids)
         print(tsv_file.name)
 
-        result = runner.invoke(cli, ['mock','-d', dest, '--manifest-path', tsv_file.name])
+        result = runner.invoke(cli, ['mock', '-d', dest, '--manifest-path', tsv_file.name])
 
         assert result.exit_code == 0
 
@@ -42,13 +44,14 @@ def test_mock_bad_file_size(caplog):
         tsv_file = manifest_bad_file_size()
 
         print(tsv_file.name)
-        result = runner.invoke(cli, ['mock','-d', dest, '--manifest-path', tsv_file.name])
+        result = runner.invoke(cli, ['mock', '-d', dest, '--manifest-path', tsv_file.name])
 
         # should return non zero
         assert result.exit_code != 0
         # should log an exception
         # # assert (
-        #     len([r for r in caplog.records if 'does not match expected size' in json.dumps(r.msg)]) == 1, caplog.records
+        #     len([r for r in caplog.records if 'does not match expected size' in json.dumps(r.msg)]) == 1,
+        #     caplog.records
         # )
 
         # leave test manifest in place if an error
@@ -66,7 +69,7 @@ def test_mock_bad_id(caplog):
 
         # create a test manifest
         tsv_file = manifest_bad_id_for_download()
-        runner.invoke(cli, ['mock','-d', dest, '--manifest-path', tsv_file.name])
+        runner.invoke(cli, ['mock', '-d', dest, '--manifest-path', tsv_file.name])
         assert len([r for r in caplog.records if 'had missing part' in json.dumps(r.msg)]) > 0, caplog.records
 
         # leave test manifest in place if an error

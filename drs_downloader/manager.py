@@ -165,11 +165,11 @@ class DrsAsyncManager(DrsManager):
         if len(parts) > 1000:
             logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
                 ({len(parts)})')
-        
-        if(drs_object.size > 20* MB):
+
+        if (drs_object.size > 20 * MB):
             self.disable = False
         else:
-            self.disable=True
+            self.disable = True
 
         paths = []
         # TODO - tqdm ugly here?
@@ -188,21 +188,13 @@ class DrsAsyncManager(DrsManager):
                 file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
                 file_path = Path(file_name)
 
-                
-
                 if (self.check_existing_parts(file_path, start, size)):
                     existing_chunks.append(file_path)
                     continue
-                    
-                
-                #TODO after turning it off logger a successful downlaod somewhere here so that the user still knows that it finnished
 
                 task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
                                                                           destination_path=destination_path))
                 chunk_tasks.append(task)
-
-               
-
 
             chunk_paths = [
                 await f
@@ -221,9 +213,9 @@ class DrsAsyncManager(DrsManager):
                 return drs_object
 
             paths.extend(chunk_paths)
-            
-        if(not None in chunk_paths and len(existing_chunks) == 0 and self.disable == True):
-            logger.info("%s Downloaded sucessfully",drs_object.name)
+
+        if (None not in chunk_paths and len(existing_chunks) == 0 and self.disable is True):
+            logger.info("%s Downloaded sucessfully", drs_object.name)
 
         drs_object.file_parts = paths
 
@@ -387,7 +379,7 @@ class DrsAsyncManager(DrsManager):
 
         """
 
-        filtered_objects = self.filter_existing_files(drs_objects, destination_path,replace=replace)
+        filtered_objects = self.filter_existing_files(drs_objects, destination_path, replace=replace)
         if len(filtered_objects) < len(drs_objects):
             complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
             for obj in complete_objects:
@@ -398,7 +390,7 @@ class DrsAsyncManager(DrsManager):
                 return
 
             drs_objects = filtered_objects
-       
+
         current = 0
         updated_drs_objects = []
 
@@ -452,10 +444,10 @@ class DrsAsyncManager(DrsManager):
             logger.info('part_size=%s', self.part_size)
             logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
 
-
         return drs_objects
 
-    def filter_existing_files(self, drs_objects: List[DrsObject], destination_path: Path, replace: bool) -> List[DrsObject]:
+    def filter_existing_files(self, drs_objects: List[DrsObject],
+                              destination_path: Path, replace: bool) -> List[DrsObject]:
         """Remove any DRS objects from a given list if they are already exist in the destination directory.
 
         Args:
@@ -466,8 +458,8 @@ class DrsAsyncManager(DrsManager):
             List[DrsObject]: The DRS objects that have yet to be downloaded
         """
 
-        #logger.info("VALUE OF REPLACE %s",replace)
-        if(replace == True): 
+        # logger.info("VALUE OF REPLACE %s",replace)
+        if (replace is True):
             return drs_objects
 
         filtered_objects = [drs for drs in drs_objects if drs.name not in os.listdir(destination_path)]
@@ -487,7 +479,6 @@ class DrsAsyncManager(DrsManager):
             bool: True if the file part exists in the destination and has the expected file size, False otherwise
         """
 
-            
         if (file_path.exists()):
             expected_size = size - start
             if (start == 0):

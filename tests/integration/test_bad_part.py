@@ -8,6 +8,7 @@ from click.testing import CliRunner
 
 from drs_downloader.cli import cli
 
+
 def test_bad_part(caplog):
     caplog.set_level(logging.INFO)
 
@@ -36,7 +37,7 @@ def test_bad_part(caplog):
             in messages
         )
 
-        #Assert that the file with the bad part was caught in the checksum step
+        # Assert that the file with the bad part was caught in the checksum step
         assert (
             'Actual md5 hash 9b507ccc2a8abb463e6ba128d9c957c5 does not match expected 238eb9fce97703ae1b9b6b6aaa00b0f3'
             in messages

@@ -1,8 +1,6 @@
 from click.testing import CliRunner
 from drs_downloader.cli import cli
-import time
 import os
-import subprocess
 import tempfile
 
 
@@ -13,7 +11,9 @@ def test_terra_bad_tsv():
         result = runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data-bad.tsv'])
         assert result.exit_code != 0
 
-#problems here
+# problems here
+
+
 def test_gen3_bad_tsv():
     """The gen3 command should execute with an error."""
     with tempfile.TemporaryDirectory() as dest:
@@ -119,6 +119,7 @@ def test_gen3_weak_creds(caplog):
                        'tests/fixtures/gen3-small.tsv'])
         messages = caplog.messages
         assert any(["UNAUTHORIZED" in message for message in messages])
+
 
 # Don't have a large enough file to test this function now that the part size has changed
 """

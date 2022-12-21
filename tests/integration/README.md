@@ -17,7 +17,12 @@ Tests in this folder require a drs server with a known population of data object
 * workflow mgt - manifest with 1 file
 * workflow mgt - any file in manifest > 1 GB
 
-
 * get 50 MB file and large file URIS for testing 
 
 
+# Needed
+* DRS URI that doesn't return name of file to test URL splitting. manager.py:184
+* DRS URI for testing for files >100GB to test download on extra large files 
+
+
+* write test for checking if URLS are signed in batches or not

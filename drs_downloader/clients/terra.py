@@ -56,7 +56,7 @@ class TerraDrsClient(DrsClient):
         login_command = "gcloud info --format=json"
         cmd = login_command.split(' ')
         output = subprocess.check_output(cmd)
-        #logger.info("GCLOUD INFO %s",output)
+        # logger.info("GCLOUD INFO %s",output)
         if "google-cloud-sdk" in str(output):
             logger.info("google-cloud-sdk credentials working")
         else:
