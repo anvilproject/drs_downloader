@@ -118,6 +118,10 @@ $ drs_downloader terra -m <manifest file> -d <destination directory>
 `--drs_header TEXT`
 > The value of the column in the manifest file containing the DRS Object IDs. Defaults to `pfb:ga4gh_drs_uri` if no value is provided.
 
+`--duplicate` 
+>  downloads files and saves them into the specified directory even if there is already files with the same name already in the directory. Numbered naming is used
+>  to specify the order of duplicates downloaded to the directory. For example: 1st -> original_file 2nd -> original_file(1) 3rd-> original_file(2) ... 
+
 ### Basic Example
 
 The below command is a basic example of how to structure a download command with all of the required arguments. It uses:
@@ -184,6 +188,7 @@ Options:
   -s, --silent                Display nothing.
   -d, --destination_dir TEXT  Destination directory.  [default: /tmp/testing]
   -m, --manifest_path TEXT    Path to manifest tsv.
+  --duplicate                 allow duplicate downloads with same file name
   --drs_header TEXT           The column header in the TSV file associated
                               with the DRS URIs.Example: pfb:ga4gh_drs_uri
   --help                      Show this message and exit.

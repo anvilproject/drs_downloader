@@ -35,10 +35,10 @@ def cli():
 @click.option('--drs-column-name', default='ga4gh_drs_uri', show_default=True,
               help='The column header in the TSV file associated with the DRS URIs.'
                    'Example: pfb:ga4gh_drs_uri')
-@click.option('--replace', default=False, is_flag=True, show_default=True, help='This flag is used to specify wether \
+@click.option('--duplicate', default=False, is_flag=True, show_default=True, help='This flag is used to specify wether \
     or not to download the file again if it already exists in the directory'
               'Example: True')
-def mock(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str, replace: bool):
+def mock(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str, duplicate: bool):
     """Generate test files locally, without the need for server."""
 
     #
@@ -46,7 +46,7 @@ def mock(silent: bool, destination_dir: str, manifest_path: str, drs_column_name
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
     # perform downloads with a mock drs client
-    _perform_downloads(destination_dir, MockDrsClient(), ids_from_manifest, silent, replace=replace)
+    _perform_downloads(destination_dir, MockDrsClient(), ids_from_manifest, silent, duplicate=duplicate)
 
 
 @cli.command()
@@ -57,10 +57,10 @@ def mock(silent: bool, destination_dir: str, manifest_path: str, drs_column_name
               help="Path to manifest tsv.")
 @click.option('--drs-column-name', default=None, help='The column header in the TSV file associated with the DRS URIs.'
               'Example: pfb:ga4gh_drs_uri')
-@click.option('--replace', default=False, is_flag=True, show_default=True, help='This flag is used to specify wether \
+@click.option('--duplicate', default=False, is_flag=True, show_default=True, help='This flag is used to specify wether \
     or not to download the file again if it already exists in the directory'
               'Example: True')
-def terra(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str, replace: bool):
+def terra(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str, duplicate: bool):
     """Copy files from terra.bio"""
 
     # get ids from manifest
@@ -68,7 +68,7 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_column_nam
 
     # perform downloads with a terra drs client
     _perform_downloads(destination_dir, TerraDrsClient(),
-                       ids_from_manifest=ids_from_manifest, silent=silent, replace=replace)
+                       ids_from_manifest=ids_from_manifest, silent=silent, duplicate=duplicate)
 
 
 @cli.command()
@@ -84,11 +84,11 @@ def terra(silent: bool, destination_dir: str, manifest_path: str, drs_column_nam
               help='Gen3 credentials file')
 @click.option('--endpoint', show_default=True, required=True,
               help='Gen3 endpoint')
-@click.option('--replace', default=False, is_flag=True, show_default=True, help='This flag is used to specify wether \
+@click.option('--duplicate', default=False, is_flag=True, show_default=True, help='This flag is used to specify wether \
     or not to download the file again if it already exists in the directory'
               'Example: True')
 def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_column_name: str,
-         api_key_path: str, endpoint: str, replace: bool):
+         api_key_path: str, endpoint: str, duplicate: bool):
     """Copy files from gen3 server."""
     # read from manifest
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
@@ -96,10 +96,10 @@ def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_column_name
     _perform_downloads(destination_dir,
                        Gen3DrsClient(api_key_path=api_key_path, endpoint=endpoint),
                        ids_from_manifest,
-                       silent, replace=replace)
+                       silent, duplicate=duplicate)
 
 
-def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, replace: bool):
+def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, duplicate: bool):
     """Common helper method to run downloads."""
     # verify parameters
     if destination_dir:
@@ -127,14 +127,17 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, r
             total=total_batches,
             desc="TOTAL_DOWNLOAD_PROGRESS", leave=True):
 
-        drs_manager.download(chunk_of_drs_objects, destination_dir, replace=replace)
+        drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate)
 
     # show results
     at_least_one_error = False
     if not silent:
+        oks = 0
         for drs_object in drs_objects:
             if len(drs_object.errors) == 0:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
+                oks +=1
+        logger.info("%s/%s files have downloaded successfully",oks,len(drs_objects))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
         for drs_object in drs_objects:

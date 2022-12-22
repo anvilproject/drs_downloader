@@ -198,7 +198,7 @@ def test_terra_rename():
         file_count = len(files)
 
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv', '--replace'])
+        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv', '--duplicate'])
         _, _, files_after = next(os.walk(dest))
         file_count_after = len(files_after)
 

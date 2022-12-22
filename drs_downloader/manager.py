@@ -367,7 +367,7 @@ class DrsAsyncManager(DrsManager):
 
         return drs_objects
 
-    def download(self, drs_objects: List[DrsObject], destination_path: Path, replace: bool) -> List[DrsObject]:
+    def download(self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool) -> List[DrsObject]:
         """Split the drs_objects into manageable sizes, download the files.
 
         Args:
@@ -379,7 +379,7 @@ class DrsAsyncManager(DrsManager):
 
         """
 
-        filtered_objects = self.filter_existing_files(drs_objects, destination_path, replace=replace)
+        filtered_objects = self.filter_existing_files(drs_objects, destination_path, duplicate=duplicate)
         if len(filtered_objects) < len(drs_objects):
             complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
             for obj in complete_objects:
@@ -447,7 +447,7 @@ class DrsAsyncManager(DrsManager):
         return drs_objects
 
     def filter_existing_files(self, drs_objects: List[DrsObject],
-                              destination_path: Path, replace: bool) -> List[DrsObject]:
+                              destination_path: Path, duplicate: bool) -> List[DrsObject]:
         """Remove any DRS objects from a given list if they are already exist in the destination directory.
 
         Args:
@@ -458,8 +458,8 @@ class DrsAsyncManager(DrsManager):
             List[DrsObject]: The DRS objects that have yet to be downloaded
         """
 
-        # logger.info("VALUE OF REPLACE %s",replace)
-        if (replace is True):
+        # logger.info("VALUE OF duplicate %s",duplicate)
+        if (duplicate is True):
             return drs_objects
 
         filtered_objects = [drs for drs in drs_objects if drs.name not in os.listdir(destination_path)]
