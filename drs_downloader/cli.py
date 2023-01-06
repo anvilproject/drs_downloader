@@ -125,7 +125,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
     for chunk_of_drs_objects in tqdm.tqdm(
             DrsAsyncManager.chunker(drs_objects, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS),
             total=total_batches,
-            desc="TOTAL_DOWNLOAD_PROGRESS", leave=True):
+            desc="TOTAL_DOWNLOAD_PROGRESS", leave=False):
 
         drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate)
 
