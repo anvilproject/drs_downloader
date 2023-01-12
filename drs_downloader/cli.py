@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 from pathlib import Path
 from typing import List
 import math
@@ -136,8 +137,8 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
         for drs_object in drs_objects:
             if len(drs_object.errors) == 0:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
-                oks +=1
-        logger.info("%s/%s files have downloaded successfully",oks,len(drs_objects))
+                oks += 1
+        logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
         for drs_object in drs_objects:
@@ -203,4 +204,5 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     cli()
