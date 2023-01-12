@@ -117,7 +117,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
     drs_objects = drs_manager.get_objects(ids_from_manifest)
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     # optimize based on workload
-    drs_objects = drs_manager.optimize_workload(drs_objects)
+    drs_objects = drs_manager.optimize_workload(silent, drs_objects)
     # determine the total number of batches
     total_batches = len(drs_objects) / DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
     if math.ceil(total_batches) - total_batches > 0:

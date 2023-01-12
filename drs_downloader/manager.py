@@ -403,7 +403,7 @@ class DrsAsyncManager(DrsManager):
 
         return updated_drs_objects
 
-    def optimize_workload(self, drs_objects: List[DrsObject]) -> List[DrsObject]:
+    def optimize_workload(self, silent, drs_objects: List[DrsObject]) -> List[DrsObject]:
         """
         Optimize the workload, sort prioritize and set thread management parameters.
         Args:
@@ -422,27 +422,31 @@ class DrsAsyncManager(DrsManager):
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
             self.max_simultaneous_downloaders = 10
-            logger.info('part_size=%s', self.part_size)
+            if not silent:
+                logger.info('part_size=%s', self.part_size)
 
         elif any(True for drs_object in drs_objects if (int(drs_object.size) > GB)):
             self.max_simultaneous_part_handlers = 10
             self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
-            logger.info('part_size=%s', self.part_size)
+            if not silent:
+                logger.info('part_size=%s', self.part_size)
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
             self.part_size = 1 * MB
             self.max_simultaneous_part_handlers = 2
             self.max_simultaneous_downloaders = 10
-            logger.info('part_size=%s', self.part_size)
-            logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
+            if not silent:
+                logger.info('part_size=%s', self.part_size)
+                logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
 
         else:
             self.part_size = 10 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
-            logger.info('part_size=%s', self.part_size)
-            logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
+            if not silent:
+                logger.info('part_size=%s', self.part_size)
+                logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
 
         return drs_objects
 
