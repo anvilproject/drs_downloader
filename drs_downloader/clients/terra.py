@@ -73,14 +73,20 @@ class TerraDrsClient(DrsClient):
     async def download_part(self,
                             drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
         # 'cannot connect to host Nih-nhlbi-diodata-catalyst-1000-genomes.storage.goooglapis.com:443' -> so added some retry
-        tries =0 
-        while(True):
+        
+        tries = 0
+        while True:   
             try:
+                
                 headers = {'Range': f'bytes={start}-{size}'}
-
                 file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
                 async with aiohttp.ClientSession(headers=headers) as session:
-                    async with session.get(drs_object.access_methods[0].access_url) as request:
+                    async with session.get(drs_object.access_methods[0].access_url) as request:  
+                        if(request.status > 399):  
+                            text = await request.content.read()
+
+                        request.raise_for_status()
+
                         file = await aiofiles.open(file_name, 'wb')
                         self.statistics.set_max_files_open()
                         async for data in request.content.iter_any():  # uses less memory
@@ -88,13 +94,36 @@ class TerraDrsClient(DrsClient):
                         await file.close()
                         return Path(file_name)
 
+            
+            except aiohttp.ClientResponseError as f:
+                tries += 1
+                if tries > 3:
+                    logger.info(f"Error Text Body {str(text)}")
+                    if("The provided token has expired" in str(text)):
+                        drs_object.errors.append(f'RECOVERABLE in AIOHTTP {str(f)}')
+                        return None
+
             except Exception as e:
-                if tries > 4:
-                    logger.error(f"terra.download_part {str(e)}")
-                    drs_object.errors.append(str(e))
+                tries += 1 
+                if tries > 3:
+                    logger.info(f"Miscellaneous Error {str(text)}")
+                    drs_object.errors.append(f'NONRECOVERABLE ERROR {str(e)}')
                     return None
-                else: 
-                    tries += 1
+        
+        """ 
+        import random
+        numn =random.randint(0,9)
+        logger.info(numn)
+        if(numn>7):
+            drs_object.errors.append(f'RECOVERABLE in AIOHTTP')
+            return None
+        else:
+            drs_object.errors.append(f'fdssfsdff in AIOHdsfsdTTP')
+            return None
+        """
+
+    
+    
 
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object` """
@@ -144,6 +173,7 @@ class TerraDrsClient(DrsClient):
                                     id=drs_object.id,
                                     checksums=[],
                                     size=0,
+                                    retry_count=0,
                                     name=None,
                                     errors=[str(e)]
                                 )
@@ -189,13 +219,15 @@ class TerraDrsClient(DrsClient):
                                 size=size_,
                                 checksums=[Checksum(checksum=md5_, type='md5')],
                                 id=object_id,
-                                name=name_)
+                                name=name_,
+                                retry_count=0)
                         except ClientResponseError as e:
                             return DrsObject(
                                 self_uri=object_id,
                                 id=object_id,
                                 checksums=[],
                                 size=0,
+                                retry_count=0,
                                 name=None,
                                 errors=[str(e)]
                             )
@@ -209,6 +241,7 @@ class TerraDrsClient(DrsClient):
                                     id=object_id,
                                     checksums=[],
                                     size=0,
+                                    retry_count=0,
                                     name=None,
                                     errors=[str(e)]
                                 )

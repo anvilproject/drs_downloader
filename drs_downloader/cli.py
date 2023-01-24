@@ -7,6 +7,7 @@ import tqdm
 import click
 import os
 import csv
+import time
 
 from drs_downloader.clients.gen3 import Gen3DrsClient
 from drs_downloader.clients.mock import MockDrsClient
@@ -100,13 +101,14 @@ def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_column_name
                        silent, duplicate=duplicate)
 
 
-def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, duplicate: bool):
+def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent,duplicate: bool):
     """Common helper method to run downloads."""
+   
     # verify parameters
     if destination_dir:
         destination_dir = Path(destination_dir)
         destination_dir.mkdir(parents=True, exist_ok=True)
-
+    
     if not silent:
         logger.info(f"Downloading to: {destination_dir.resolve()}")
 
@@ -117,7 +119,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
     drs_objects = drs_manager.get_objects(ids_from_manifest)
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     # optimize based on workload
-    drs_objects = drs_manager.optimize_workload(silent, drs_objects)
+    drs_objects = drs_manager.optimize_workload(silent,drs_objects)
     # determine the total number of batches
     total_batches = len(drs_objects) / DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
     if math.ceil(total_batches) - total_batches > 0:
@@ -126,25 +128,40 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
     for chunk_of_drs_objects in tqdm.tqdm(
             DrsAsyncManager.chunker(drs_objects, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS),
             total=total_batches,
-            desc="TOTAL_DOWNLOAD_PROGRESS", leave=False):
+            desc="TOTAL_DOWNLOAD_PROGRESS", leave=False):        
 
         drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate)
 
-    # show results
+    #This seems like overkill. You don't need to iterate through each object to get the same effect. Maybe each batch ?
+    #for drsobject in drs_objects:
+
+    """
+    for drsobject in drs_objects:
+       # logger.info(f"VALUE OF DRS OBJECTS ERRORS {drsobject.errors}") 
+
+        if(any(['RECOVERABLE in AIOHTTP' in str(error) for error in drsobject.errors])):
+            if not silent:
+                logger.info(f"VALUE OF RETRY COUNT {retry_count+1}")
+            _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, duplicate=duplicate,retry_count=retry_count+1)
+    """
+    
     at_least_one_error = False
-    if not silent:
-        oks = 0
-        for drs_object in drs_objects:
-            if len(drs_object.errors) == 0:
+        
+    oks = 0
+    for drs_object in drs_objects:
+        if len(drs_object.errors) == 0:
+            if not silent:
                 logger.info((drs_object.name, 'OK', drs_object.size, len(drs_object.file_parts)))
-                oks += 1
+            oks += 1
+    if not silent:
         logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
         logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
-        for drs_object in drs_objects:
-            if len(drs_object.errors) > 0:
+    for drs_object in drs_objects:
+        if (len(drs_object.errors) > 0):
+            if not silent:
                 logger.error((drs_object.name, 'ERROR', drs_object.size, len(drs_object.file_parts), drs_object.errors))
-                at_least_one_error = True
+            at_least_one_error = True
 
     if at_least_one_error:
         exit(1)
@@ -159,7 +176,7 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
     Returns:
         List[str]: The URI's corresponding to the DRS objects.
     """
-    assert manifest_path.is_file()
+    assert manifest_path.is_file(), "The manifest file path and name given does not exist"
 
     uris = []
     uri_index = 0
