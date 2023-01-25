@@ -165,7 +165,6 @@ class TerraDrsClient(DrsClient):
                                     id=drs_object.id,
                                     checksums=[],
                                     size=0,
-                                    retry_count=0,
                                     name=None,
                                     errors=[str(e)]
                                 )
@@ -210,15 +209,13 @@ class TerraDrsClient(DrsClient):
                                 size=size_,
                                 checksums=[Checksum(checksum=md5_, type='md5')],
                                 id=object_id,
-                                name=name_,
-                                retry_count=0)
+                                name=name_)
                         except ClientResponseError as e:
                             return DrsObject(
                                 self_uri=object_id,
                                 id=object_id,
                                 checksums=[],
                                 size=0,
-                                retry_count=0,
                                 name=None,
                                 errors=[str(e)]
                             )
@@ -232,7 +229,6 @@ class TerraDrsClient(DrsClient):
                                     id=object_id,
                                     checksums=[],
                                     size=0,
-                                    retry_count=0,
                                     name=None,
                                     errors=[str(e)]
                                 )
