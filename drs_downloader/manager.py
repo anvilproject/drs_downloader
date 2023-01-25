@@ -262,13 +262,13 @@ class DrsAsyncManager(DrsManager):
                 wrapped_fd = Wrapped(fd, checksum)
                 T_2 = time.time()
                 # efficient way to write
-                shutil.copyfileobj(wrapped_fd, wfd, 1024*1024)
+                shutil.copyfileobj(wrapped_fd, wfd, 1024*1024*10)
                 T_3 = time.time()
                 logger.info(f"Time to copy file object {T_3 - T_2}")
                 # explicitly close all
                 wrapped_fd.close()
                 fd.close()
-                wfd.flush()
+                # wfd.flush()
                 T_7 = time.time()
                 logger.info(f"TOTAL INTERATION TIME {T_7 - T_1}")
             T_FIN = time.time()
