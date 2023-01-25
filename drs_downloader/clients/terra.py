@@ -72,17 +72,14 @@ class TerraDrsClient(DrsClient):
 
     async def download_part(self,
                             drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
-        # 'cannot connect to host Nih-nhlbi-diodata-catalyst-1000-genomes.storage.goooglapis.com:443' -> so added some retry
-        
         tries = 0
-        while True:   
+        while True:
             try:
-                
                 headers = {'Range': f'bytes={start}-{size}'}
                 file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
                 async with aiohttp.ClientSession(headers=headers) as session:
-                    async with session.get(drs_object.access_methods[0].access_url) as request:  
-                        if(request.status > 399):  
+                    async with session.get(drs_object.access_methods[0].access_url) as request:
+                        if (request.status > 399):
                             text = await request.content.read()
 
                         request.raise_for_status()
@@ -94,23 +91,21 @@ class TerraDrsClient(DrsClient):
                         await file.close()
                         return Path(file_name)
 
-            
             except aiohttp.ClientResponseError as f:
                 tries += 1
                 if tries > 3:
                     logger.info(f"Error Text Body {str(text)}")
-                    if("The provided token has expired" in str(text)):
+                    if ("The provided token has expired" in str(text)):
                         drs_object.errors.append(f'RECOVERABLE in AIOHTTP {str(f)}')
                         return None
 
             except Exception as e:
-                tries += 1 
+                tries += 1
                 if tries > 3:
                     logger.info(f"Miscellaneous Error {str(text)}")
                     drs_object.errors.append(f'NONRECOVERABLE ERROR {str(e)}')
                     return None
-        
-        """ 
+        """
         import random
         numn =random.randint(0,9)
         logger.info(numn)
@@ -121,9 +116,6 @@ class TerraDrsClient(DrsClient):
             drs_object.errors.append(f'fdssfsdff in AIOHdsfsdTTP')
             return None
         """
-
-    
-    
 
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object` """
@@ -138,35 +130,35 @@ class TerraDrsClient(DrsClient):
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
         }
-        tries =0
+        tries = 0
         async with aiohttp.ClientSession(headers=headers) as session:
-            while(True): # This is here so that URL signing errors are caught they are rare, but I did capture one 
+            while (True):  # This is here so that URL signing errors are caught they are rare, but I did capture one
                 try:
                     async with session.post(url=self.endpoint, json=data) as response:
-                            try:
-                                self.statistics.set_max_files_open()
-                                response.raise_for_status()
-                                resp = await response.json(content_type=None)
-                                assert 'accessUrl' in resp, resp
-                                if resp['accessUrl'] is None:
-                                    account_command = 'gcloud config get-value account'
-                                    cmd = account_command.split(' ')
-                                    account = subprocess.check_output(cmd).decode("ascii")
-                                    raise Exception(
-                                        f"A valid URL was not returned from the server. \
-                                        Please check the access for {account}\n{resp}")
-                                url_ = resp['accessUrl']['url']
-                                drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
-                                return drs_object
-                            except ClientResponseError as e:
-                                drs_object.errors.append(str(e))
-                                logger.error(f"A file has failed the signing process, specifically {str(e)}")
-                                return drs_object
-                
+                        try:
+                            self.statistics.set_max_files_open()
+                            response.raise_for_status()
+                            resp = await response.json(content_type=None)
+                            assert 'accessUrl' in resp, resp
+                            if resp['accessUrl'] is None:
+                                account_command = 'gcloud config get-value account'
+                                cmd = account_command.split(' ')
+                                account = subprocess.check_output(cmd).decode("ascii")
+                                raise Exception(
+                                    f"A valid URL was not returned from the server. \
+                                    Please check the access for {account}\n{resp}")
+                            url_ = resp['accessUrl']['url']
+                            drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
+                            return drs_object
+                        except ClientResponseError as e:
+                            drs_object.errors.append(str(e))
+                            logger.error(f"A file has failed the signing process, specifically {str(e)}")
+                            return drs_object
+
                 except ClientConnectorError as e:
                     logger.info("URL Signing Failed, retrying")
-                    if(tries > 4):
-                        logger.error(f"File download failure. \
+                    if (tries > 4):
+                        logger.error("File download failure. \
     Run the exact command again to only download the missing file")
                         return DrsObject(
                                     self_uri=None,
@@ -178,8 +170,7 @@ class TerraDrsClient(DrsClient):
                                     errors=[str(e)]
                                 )
                     else:
-                        tries +=1
-
+                        tries += 1
 
     async def get_object(self, object_id: str) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
@@ -201,9 +192,9 @@ class TerraDrsClient(DrsClient):
             'authorization': 'Bearer ' + self.token,
             'content-type': 'application/json'
         }
-        tries =0 
+        tries = 0
         async with aiohttp.ClientSession(headers=headers) as session:
-            while(True): # this is here for the somewhat more common Martha disconnects. 
+            while (True):  # this is here for the somewhat more common Martha disconnects.
                 try:
                     async with session.post(url=self.endpoint, json=data) as response:
                         try:
@@ -233,8 +224,8 @@ class TerraDrsClient(DrsClient):
                             )
                 except ClientConnectorError as e:
                     logger.info("Martha Disconnect, retrying")
-                    if(tries > 4):
-                        logger.error(f"File download failure. \
+                    if (tries > 4):
+                        logger.error("File download failure. \
     Run the exact command again to only download the missing file")
                         return DrsObject(
                                     self_uri=object_id,
@@ -246,7 +237,4 @@ class TerraDrsClient(DrsClient):
                                     errors=[str(e)]
                                 )
                     else:
-                        tries +=1
-
-                
-
+                        tries += 1
