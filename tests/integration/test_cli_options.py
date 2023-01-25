@@ -85,7 +85,7 @@ def test_terra(tmp_path, caplog):
 def test_terra_default_cwd():
     runner = CliRunner()
     pre_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
-    result = runner.invoke(cli, ['terra', '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+    result = runner.invoke(cli, ['terra', '--duplicate', '--manifest-path', 'tests/fixtures/terra-data.tsv'])
     post_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
 
     assert result.exit_code == 0
