@@ -418,7 +418,8 @@ class DrsAsyncManager(DrsManager):
             current = 0
             updated_drs_objects = []
 
-            for chunk_of_drs_objects in DrsAsyncManager.chunker(drs_objects, self.max_simultaneous_object_retrievers):
+            for chunk_of_drs_objects in DrsAsyncManager.chunker(filtered_objects,
+                                                                self.max_simultaneous_object_retrievers):
 
                 completed_chunk = asyncio.run(self._run_download(drs_objects=chunk_of_drs_objects,
                                                                  destination_path=destination_path))

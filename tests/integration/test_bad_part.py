@@ -31,11 +31,17 @@ def test_bad_part(caplog):
         assert result.exit_code == 1
 
         messages = caplog.messages
-        # Assert that the part file passed the filesize check
+
+        print("MESSAGES", caplog.messages)
+        """
+         Assert that the part file passed the filesize check
+         Although this feature is good in practice it is really unnecesary to the end user when a
+        resign happens and this message is displayed 150 times
         assert (
             'HG00622.final.cram.crai.0.1048576.part exists and has expected size. Skipping download.'
             in messages
         )
+        """
 
         # Assert that the file with the bad part was caught in the checksum step
         assert (

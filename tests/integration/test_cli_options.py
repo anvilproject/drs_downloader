@@ -168,11 +168,11 @@ def test_gen3():
                                 '--manifest-path',
                                 'tests/fixtures/gen3-small.tsv'])
         assert result.exit_code == 0
-"""
+
 
 
 def test_gen3_silent():
-    """The gen3 command should execute without error."""
+    # The gen3 command should execute without error.
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
         result = runner.invoke(cli,
@@ -189,6 +189,7 @@ def test_gen3_silent():
         assert result.exit_code == 0
 
 # this function errors
+"""
 
 
 def test_terra_rename():

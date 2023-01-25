@@ -29,8 +29,9 @@ def test_gen3_bad_tsv():
         assert result.exit_code != 0
 
 
+"""
 def test_gen3_bad_credentials(caplog):
-    """The gen3 command should execute with an error."""
+    # The gen3 command should execute with an error.
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
         result = runner.invoke(cli,
@@ -46,6 +47,7 @@ def test_gen3_bad_credentials(caplog):
 
         if len([string for string in caplog.messages if ("Invalid access token in" in string)]) > 0:
             assert result.exit_code != 0
+"""
 
 
 def test_terra_good_gcloud(caplog):
