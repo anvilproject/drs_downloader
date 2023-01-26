@@ -263,8 +263,10 @@ class DrsAsyncManager(DrsManager):
                 wrapped_fd = Wrapped(fd, checksum)
                 # efficient way to write
                 await asyncio.to_thread(shutil.copyfileobj, wrapped_fd, wfd, 1024*1024*10)
+
                 # explicitly close all
                 wrapped_fd.close()
+                f.unlink()
                 fd.close()
                 wfd.flush()
             # T_FIN = time.time()
@@ -284,11 +286,8 @@ class DrsAsyncManager(DrsManager):
             msg = f"The actual size {actual_size} does not match expected size {drs_object.size}"
             drs_object.errors.append(msg)
 
-        # if error leave parts in place for now
-        if len(drs_object.errors) == 0:
-            # ok, so clean up file parts
-            for f in drs_object.file_parts:
-                f.unlink()
+        # parts will be purposefully saved if there is an error so that
+        # recovery script can have a chance to rebuild the file
 
         return drs_object
 

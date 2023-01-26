@@ -10,6 +10,7 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 - [Installation](#installation)
   - [Checksum Verification](#checksum-verification)
+- [Running the Executable](#running-the-executable)
   - [Requirements](#requirements)
     - [Authentication](#authentication)
 - [Usage](#usage)
@@ -66,6 +67,18 @@ shasum: checksums.txt: no file was verified
 
 In such a case please reach out to the contributors for assistance.
 </details>
+
+## Running the Executable
+For Linux to run the exe you will have to grant the file higher permissions. you can do this by running:
+
+```sh
+chmod +x [filename]
+```
+
+For mac you will also have to navigate to:
+System Preferences -> Security & Privacy -> Click button allow Exe to run
+
+
 
 ### Requirements
 
