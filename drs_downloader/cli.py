@@ -7,6 +7,7 @@ import tqdm
 import click
 import os
 import csv
+import sys
 
 from drs_downloader.clients.gen3 import Gen3DrsClient
 from drs_downloader.clients.mock import MockDrsClient
@@ -100,6 +101,25 @@ def gen3(silent: bool, destination_dir: str, manifest_path: str, drs_column_name
                        silent, duplicate=duplicate)
 
 
+# CREDIT https://stackoverflow.com/questions/5194057/better-way-to-convert-file-sizes-in-python
+def pretty_size(bytes):
+    """Integer -> human readable Data Size Pretty Printer"""
+    units = [
+        (1 << 50, ' PB'),
+        (1 << 40, ' TB'),
+        (1 << 30, ' GB'),
+        (1 << 20, ' MB'),
+        (1 << 10, ' KB'),
+        (1, (' bytes')),
+    ]
+
+    for factor, suffix in units:
+        if (bytes >= factor):
+            break
+    amount = int(bytes / factor)
+    return str(amount) + suffix
+
+
 def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, duplicate: bool):
     """Common helper method to run downloads."""
 
@@ -116,6 +136,11 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
 
     # call the server, get size, checksums etc.; sort them by size
     drs_objects = drs_manager.get_objects(ids_from_manifest)
+    total_size_list = [total.size for total in drs_objects]
+    total = pretty_size(sum(total_size_list))
+    if not silent:
+        logger.info(f"Total download size is {total}")
+
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     # optimize based on workload
     drs_objects = drs_manager.optimize_workload(silent, drs_objects)
@@ -127,7 +152,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
     for chunk_of_drs_objects in tqdm.tqdm(
             DrsAsyncManager.chunker(drs_objects, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS),
             total=total_batches,
-            desc="TOTAL_DOWNLOAD_PROGRESS", leave=False):
+            desc="TOTAL_DOWNLOAD_PROGRESS", leave=False, file=sys.stdout, disable=(total_batches == 1)):
 
         drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate)
 
@@ -154,7 +179,7 @@ def _perform_downloads(destination_dir, drs_client, ids_from_manifest, silent, d
             oks += 1
     if not silent:
         logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
-        logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
+        # logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
     for drs_object in drs_objects:
         if (len(drs_object.errors) > 0):

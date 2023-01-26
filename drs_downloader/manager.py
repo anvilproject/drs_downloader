@@ -10,7 +10,7 @@ import os
 import tqdm
 import tqdm.asyncio
 import sys
-import time
+# import time
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
     DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS, DEFAULT_PART_SIZE, MB, GB
@@ -164,8 +164,9 @@ class DrsAsyncManager(DrsManager):
             parts.append((start, size, ))
 
         if len(parts) > 1000:
-            logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
-                ({len(parts)})')
+            pass
+            # logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
+            # ({len(parts)})')
 
         if (drs_object.size > 20 * MB):
             self.disable = False
@@ -216,7 +217,7 @@ class DrsAsyncManager(DrsManager):
                 if any(['RECOVERABLE in AIOHTTP' in str(error) for error in drs_object.errors]):
                     return drs_object
                 else:
-                    logger.error(f"{drs_object.name} had missing part.")
+                    # logger.error(f"{drs_object.name} had missing part.")
                     return drs_object
 
             paths.extend(chunk_paths)
@@ -230,7 +231,8 @@ class DrsAsyncManager(DrsManager):
         """
 
         if (None not in chunk_paths and len(existing_chunks) == 0 and self.disable is True):
-            logger.info("%s Downloaded sucessfully", drs_object.name)
+            pass
+            # logger.info("%s Downloaded sucessfully", drs_object.name)
 
         drs_object.file_parts = paths
 
@@ -253,26 +255,20 @@ class DrsAsyncManager(DrsManager):
             # sort the items of the list in place - Numerically based on start i.e. "xxxxxx.start.end.part"
             drs_object.file_parts.sort(key=lambda x: int(str(x).split('.')[-3]))
 
-            T_0 = time.time()
+            # T_0 = time.time()
             for f in tqdm.tqdm(drs_object.file_parts, total=len(drs_object.file_parts),
                                desc=f"       {drs_object.name} stitching", file=sys.stdout,
                                leave=False, disable=self.disable):
-                T_1 = time.time()
-                fd = open(f, 'rb')
+                fd = open(f, 'rb')  # NOT ASYNC
                 wrapped_fd = Wrapped(fd, checksum)
-                T_2 = time.time()
                 # efficient way to write
-                shutil.copyfileobj(wrapped_fd, wfd, 1024*1024*10)
-                T_3 = time.time()
-                logger.info(f"Time to copy file object {T_3 - T_2}")
+                await asyncio.to_thread(shutil.copyfileobj, wrapped_fd, wfd, 1024*1024*10)
                 # explicitly close all
                 wrapped_fd.close()
                 fd.close()
-                # wfd.flush()
-                T_7 = time.time()
-                logger.info(f"TOTAL INTERATION TIME {T_7 - T_1}")
-            T_FIN = time.time()
-            logger.info(f"TOTAL TIME {T_FIN - T_0}")
+                wfd.flush()
+            # T_FIN = time.time()
+            # logger.info(f"TOTAL 'STITCHING' (md5 10*MB no flush) TIME {T_FIN-T_0} {original_file_name}")
         actual_checksum = checksum.hexdigest()
 
         actual_size = os.stat(Path(destination_path.joinpath(filename))).st_size
@@ -281,7 +277,7 @@ class DrsAsyncManager(DrsManager):
         expected_checksum = drs_object.checksums[0].checksum
         if expected_checksum != actual_checksum:
             msg = f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}"
-            logger.error(f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}")
+            # logger.error(f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}")
             drs_object.errors.append(msg)
 
         if drs_object.size != actual_size:
@@ -409,10 +405,11 @@ class DrsAsyncManager(DrsManager):
             if len(filtered_objects) < len(drs_objects):
                 complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
                 for obj in complete_objects:
-                    logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
+                    pass
+                    # logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
 
                 if len(filtered_objects) == 0:
-                    logger.info(f"All DRS objects already present in {destination_path}.")
+                    # logger.info(f"All DRS objects already present in {destination_path}.")
                     return
 
             current = 0
@@ -432,7 +429,8 @@ class DrsAsyncManager(DrsManager):
                 break
 
             else:
-                logger.info("RECURSING \n\n\n")
+                pass
+                # logger.info("RECURSING \n\n\n")
 
             for drsobject in drs_objects:
                 drsobject.errors.clear()
@@ -498,12 +496,12 @@ class DrsAsyncManager(DrsManager):
             List[DrsObject]: The DRS objects that have yet to be downloaded
         """
 
-        logger.info(f"VALUE OF duplicate {duplicate}")
+        # logger.info(f"VALUE OF duplicate {duplicate}")
         if (duplicate is True):
             return drs_objects
 
         filtered_objects = [drs for drs in drs_objects if (drs.name not in os.listdir(destination_path))]
-        logger.info(f"VALUE OF FILTERED OBJECTS {filtered_objects}")
+        # logger.info(f"VALUE OF FILTERED OBJECTS {filtered_objects}")
 
         return filtered_objects
 

@@ -3,3 +3,4 @@ aiohttp
 tqdm
 aiofiles
 requests
+google-cloud-storage

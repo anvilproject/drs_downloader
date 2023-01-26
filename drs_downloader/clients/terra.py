@@ -1,16 +1,17 @@
 import subprocess
 from pathlib import Path
-import json
 from dataclasses import dataclass
 from typing import Optional
 
 import aiofiles
 import aiohttp
 import logging
+import google.auth.transport.requests
 
 from aiohttp import ClientResponseError, ClientConnectorError
 
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
+
 
 logger = logging.getLogger(__name__)
 logging.getLogger().setLevel(logging.INFO)
@@ -37,38 +38,17 @@ class TerraDrsClient(DrsClient):
 
         Returns:
             str: auth token
-        """
-        gcloud_info = self._get_gcloud_info()
-        if gcloud_info.account is None:
-            raise Exception("No Google Cloud account found.")
+            see https://github.com/DataBiosphere/terra-notebook-utils/blob/b53bb8656d
+            502ecbdbfe9c5edde3fa25bd90bbf8/terra_notebook_utils/gs.py#L25-L42
 
-        token_command = "gcloud auth application-default print-access-token"
-        cmd = token_command.split(' ')
-        try:
-            token = subprocess.check_output(cmd).decode("ascii")[0:-1]
-        except FileNotFoundError:
-            logger.error("gcloud not found")
-            exit(1)
+        """
+
+        creds, projects = google.auth.default()
+        creds.refresh(google.auth.transport.requests.Request())
+        token = creds.token
+
         assert token, "No token retrieved."
         return token
-
-    def _get_gcloud_info(self) -> GcloudInfo:
-        login_command = "gcloud info --format=json"
-        cmd = login_command.split(' ')
-        output = subprocess.check_output(cmd)
-        # logger.info("GCLOUD INFO %s",output)
-        if "google-cloud-sdk" in str(output):
-            logger.info("google-cloud-sdk credentials working")
-        else:
-            logger.info("google credentials are broken")
-
-        js = json.loads(output)
-
-        account = js['config']['account']
-        project = js['config']['project']
-
-        gcloud_info = self.GcloudInfo(account, project)
-        return gcloud_info
 
     async def download_part(self,
                             drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
@@ -94,7 +74,7 @@ class TerraDrsClient(DrsClient):
             except aiohttp.ClientResponseError as f:
                 tries += 1
                 if tries > 3:
-                    logger.info(f"Error Text Body {str(text)}")
+                    # logger.info(f"Error Text Body {str(text)}")
                     if ("The provided token has expired" in str(text)):
                         drs_object.errors.append(f'RECOVERABLE in AIOHTTP {str(f)}')
                         return None
@@ -102,7 +82,7 @@ class TerraDrsClient(DrsClient):
             except Exception as e:
                 tries += 1
                 if tries > 3:
-                    logger.info(f"Miscellaneous Error {str(text)}")
+                    # logger.info(f"Miscellaneous Error {str(text)}")
                     drs_object.errors.append(f'NONRECOVERABLE ERROR {str(e)}')
                     return None
         """
@@ -148,15 +128,19 @@ class TerraDrsClient(DrsClient):
                                     f"A valid URL was not returned from the server. \
                                     Please check the access for {account}\n{resp}")
                             url_ = resp['accessUrl']['url']
-                            drs_object.access_methods = [AccessMethod(access_url=url_, type='gs')]
+                            type = 'none'
+                            if ("storage.googleapis.com" in url_):
+                                type = 'gs'
+
+                            drs_object.access_methods = [AccessMethod(access_url=url_, type=type)]
                             return drs_object
                         except ClientResponseError as e:
                             drs_object.errors.append(str(e))
-                            logger.error(f"A file has failed the signing process, specifically {str(e)}")
+                            # logger.error(f"A file has failed the signing process, specifically {str(e)}")
                             return drs_object
 
                 except ClientConnectorError as e:
-                    logger.info("URL Signing Failed, retrying")
+                    # logger.info("URL Signing Failed, retrying")
                     if (tries > 4):
                         logger.error("File download failure. \
     Run the exact command again to only download the missing file")
@@ -220,7 +204,7 @@ class TerraDrsClient(DrsClient):
                                 errors=[str(e)]
                             )
                 except ClientConnectorError as e:
-                    logger.info("Martha Disconnect, retrying")
+                    # logger.info("Martha Disconnect, retrying")
                     if (tries > 4):
                         logger.error("File download failure. \
     Run the exact command again to only download the missing file")
