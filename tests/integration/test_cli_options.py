@@ -153,6 +153,7 @@ def test_optimizer_part_size_large_file():
         str_store = fd.readlines()
         assert any(("part_size=134217728" in message for message in str_store))
 
+
 """
 def test_gen3():
         The gen3 command should execute without error.
