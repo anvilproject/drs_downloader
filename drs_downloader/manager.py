@@ -408,7 +408,7 @@ class DrsAsyncManager(DrsManager):
                     # logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
 
                 if len(filtered_objects) == 0:
-                    # logger.info(f"All DRS objects already present in {destination_path}.")
+                    logger.info(f"All DRS objects already present in {destination_path}.")
                     return
 
             current = 0

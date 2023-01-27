@@ -48,6 +48,7 @@ class TerraDrsClient(DrsClient):
         token = creds.token
 
         assert token, "No token retrieved."
+        logger.info("gcloud token successfully fetched")
         return token
 
     async def download_part(self,

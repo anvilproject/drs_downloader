@@ -75,6 +75,8 @@ class MockDrsClient(DrsClient):
         # logger.error("ERROR1 %s",drs_object)
 
         if "BAD_ID" in drs_object.self_uri:
+            logger.warning(f"Mock bad id {drs_object.self_uri}")
+            drs_object.errors = ["Mock error BAD_ID"]
             return None
 
         with open(Path(os.getcwd(), f'{drs_object.name}.golden'), 'rb') as f:

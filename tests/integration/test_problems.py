@@ -56,7 +56,7 @@ def test_terra_good_gcloud(caplog):
         runner = CliRunner()
         runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
         messages = caplog.messages
-        assert any(("google-cloud-sdk" in message for message in messages))
+        assert any(("gcloud token successfully fetched" in message for message in messages))
 
 
 def test_terra_bad_gcloud(caplog):
