@@ -13,8 +13,16 @@ from drs_downloader.cli import cli
 def test_duplicate_uris():
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest-path',
-                               'tests/fixtures/terra-data-duplicates.tsv'])
+        result = runner.invoke(
+            cli,
+            [
+                "terra",
+                "-d",
+                dest,
+                "--manifest-path",
+                "tests/fixtures/terra-data-duplicates.tsv",
+            ],
+        )
         assert result.exit_code == 1
         assert result.exception
 
@@ -22,13 +30,24 @@ def test_duplicate_uris():
 def test_terra_one_file():
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-one-file.tsv'])
+        result = runner.invoke(
+            cli,
+            [
+                "terra",
+                "-d",
+                dest,
+                "--manifest-path",
+                "tests/fixtures/terra-one-file.tsv",
+            ],
+        )
         assert result.exit_code == 0
 
         files = next(os.walk(dest))[2]
         assert len(files) == 1
         assert files[0] == "HG02450.final.cram.crai"
-        assert _verify_file(Path(dest, files[0]), 1405458, 'b2b6648d0b6e9f04508afda4fb815e3e')
+        assert _verify_file(
+            Path(dest, files[0]), 1405458, "b2b6648d0b6e9f04508afda4fb815e3e"
+        )
 
 
 def _verify_file(file: Path, expected_size: int, expected_md5: str) -> bool:
@@ -51,7 +70,7 @@ def _verify_file(file: Path, expected_size: int, expected_md5: str) -> bool:
         return False
 
     md5_hash = hashlib.md5()
-    md5_hash.update(open(file, 'rb').read())
+    md5_hash.update(open(file, "rb").read())
     actual_md5 = md5_hash.hexdigest()
 
     if actual_md5 != expected_md5:
@@ -63,7 +82,10 @@ def _verify_file(file: Path, expected_size: int, expected_md5: str) -> bool:
 def test_terra(tmp_path, caplog):
 
     runner = CliRunner()
-    result = runner.invoke(cli, ['terra', '-d', tmp_path, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+    result = runner.invoke(
+        cli,
+        ["terra", "-d", tmp_path, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+    )
     assert result.exit_code == 0
 
     files = sorted(os.listdir(tmp_path))
@@ -72,10 +94,14 @@ def test_terra(tmp_path, caplog):
     assert files[9] == "NA20525.final.cram.crai"
     assert f"Downloading to: {tmp_path}" in caplog.messages
 
-    result = runner.invoke(cli, ['terra', '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+    result = runner.invoke(
+        cli, ["terra", "--manifest-path", "tests/fixtures/terra-data.tsv"]
+    )
     assert result.exit_code == 0
 
-    files = [file for file in sorted(os.listdir(os.getcwd())) if "final.cram.crai" in file]
+    files = [
+        file for file in sorted(os.listdir(os.getcwd())) if "final.cram.crai" in file
+    ]
     # assert len(files) == 10
     # assert files[0] == "HG00536.final.cram.crai"
     # assert files[9] == "NA20525.final.cram.crai"
@@ -85,7 +111,10 @@ def test_terra(tmp_path, caplog):
 def test_terra_default_cwd():
     runner = CliRunner()
     pre_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
-    result = runner.invoke(cli, ['terra', '--duplicate', '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+    result = runner.invoke(
+        cli,
+        ["terra", "--duplicate", "--manifest-path", "tests/fixtures/terra-data.tsv"],
+    )
     post_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
 
     assert result.exit_code == 0
@@ -118,35 +147,67 @@ def test_terra_silent():
     """The terra command should execute without error."""
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--silent',
-                               '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+        result = runner.invoke(
+            cli,
+            [
+                "terra",
+                "-d",
+                dest,
+                "--silent",
+                "--manifest-path",
+                "tests/fixtures/terra-data.tsv",
+            ],
+        )
         assert result.exit_code == 0
 
 
 def test_optimizer_part_size(caplog):
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(
+            cli,
+            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        )
         messages = caplog.messages
-        part_size = int([messages[messages.index(message)]
-                        for message in messages if ('part_size' in message)][0].split("=")[-1])
-        assert part_size == (1 * 1024 ** 2)
+        part_size = int(
+            [
+                messages[messages.index(message)]
+                for message in messages
+                if ("part_size" in message)
+            ][0].split("=")[-1]
+        )
+        assert part_size == (1 * 1024**2)
 
 
 def test_optimizer_simul_part_handlers(caplog):
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(
+            cli,
+            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        )
         messages = caplog.messages
         # print("THE VALUE OF MESSAGES ", messages)
-        part_handlers = int([messages[messages.index(message)]
-                            for message in messages if ('part_handlers' in message)][0].split("=")[-1])
+        part_handlers = int(
+            [
+                messages[messages.index(message)]
+                for message in messages
+                if ("part_handlers" in message)
+            ][0].split("=")[-1]
+        )
         assert part_handlers == 2
 
 
 def test_optimizer_part_size_large_file():
-    dir = os.path.realpath('drs_downloader.log')
-    result = subprocess.Popen(['drs_download', 'terra', '--manifest-path', 'tests/fixtures/mixed_file_sizes.tsv'])
+    dir = os.path.realpath("drs_downloader.log")
+    result = subprocess.Popen(
+        [
+            "drs_download",
+            "terra",
+            "--manifest-path",
+            "tests/fixtures/mixed_file_sizes.tsv",
+        ]
+    )
     time.sleep(5)
     result.kill()
     with open(dir, "r") as fd:
@@ -203,7 +264,17 @@ def test_terra_rename():
         file_count = len(files)
 
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv', '--duplicate'])
+        runner.invoke(
+            cli,
+            [
+                "terra",
+                "-d",
+                dest,
+                "--manifest-path",
+                "tests/fixtures/terra-data.tsv",
+                "--duplicate",
+            ],
+        )
         _, _, files_after = next(os.walk(dest))
         file_count_after = len(files_after)
 
@@ -221,7 +292,10 @@ def test_terra_do_not_rename():
         file_count = len(files)
 
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(
+            cli,
+            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        )
         _, _, files_after = next(os.walk(dest))
         file_count_after = len(files_after)
 

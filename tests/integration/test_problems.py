@@ -8,8 +8,18 @@ def test_terra_bad_tsv():
     """The terra command should execute with an error."""
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data-bad.tsv'])
+        result = runner.invoke(
+            cli,
+            [
+                "terra",
+                "-d",
+                dest,
+                "--manifest-path",
+                "tests/fixtures/terra-data-bad.tsv",
+            ],
+        )
         assert result.exit_code != 0
+
 
 # problems here
 
@@ -18,14 +28,18 @@ def test_gen3_bad_tsv():
     """The gen3 command should execute with an error."""
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        result = runner.invoke(cli,
-                               ['gen3',
-                                '-d',
-                                dest,
-                                '--endpoint',
-                                'https://development.aced-idp.org',
-                                '--manifest_path',
-                                'tests/fixtures/gen3-bad.tsv'])
+        result = runner.invoke(
+            cli,
+            [
+                "gen3",
+                "-d",
+                dest,
+                "--endpoint",
+                "https://development.aced-idp.org",
+                "--manifest_path",
+                "tests/fixtures/gen3-bad.tsv",
+            ],
+        )
         assert result.exit_code != 0
 
 
@@ -54,26 +68,34 @@ def test_terra_good_gcloud(caplog):
     """The gen3 command should execute with an error."""
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(
+            cli,
+            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        )
         messages = caplog.messages
-        assert any(("gcloud token successfully fetched" in message for message in messages))
+        assert any(
+            ("gcloud token successfully fetched" in message for message in messages)
+        )
 
 
 def test_terra_bad_gcloud(caplog):
     """The gen3 command should execute with an error."""
 
-    paths = os.getenv('PATH').split(":")
+    paths = os.getenv("PATH").split(":")
     deldexes = [paths.index(path) for path in paths if ("google-cloud-sdk" in path)]
     for deldex in deldexes:
-        del (paths[deldex])
-    paths = ':'.join(paths)
+        del paths[deldex]
+    paths = ":".join(paths)
 
     dict_str = {}
     dict_str.update(dict(PATH=paths))
 
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner(env=dict_str)
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/terra-data.tsv'])
+        runner.invoke(
+            cli,
+            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        )
         # messages = caplog.messages
         # print("THE VALUE OF MESSAGES ",messages)
         # TODO: update log message assertion here
@@ -104,7 +126,16 @@ def test_gen3_uri_not_found(caplog):
 def test_terra_uri_not_found(caplog):
     with tempfile.TemporaryDirectory() as dest:
         runner = CliRunner()
-        runner.invoke(cli, ['terra', '-d', dest, '--manifest-path', 'tests/fixtures/bad_terra_uris.tsv'])
+        runner.invoke(
+            cli,
+            [
+                "terra",
+                "-d",
+                dest,
+                "--manifest-path",
+                "tests/fixtures/bad_terra_uris.tsv",
+            ],
+        )
         messages = caplog.messages
         assert any(["Not Found" in message for message in messages])
 

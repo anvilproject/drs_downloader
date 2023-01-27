@@ -18,10 +18,15 @@ class Gen3DrsClient(DrsClient):
     Calls the Gen3 DRS server indexd
     """
 
-    def __init__(self, api_key_path, endpoint,
-                 access_token_resource_path='/user/credentials/cdis/access_token',
-                 drs_api='/ga4gh/drs/v1/objects/',
-                 *args, **kwargs):
+    def __init__(
+        self,
+        api_key_path,
+        endpoint,
+        access_token_resource_path="/user/credentials/cdis/access_token",
+        drs_api="/ga4gh/drs/v1/objects/",
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.authorized = None
         self.api_key = None
@@ -38,11 +43,13 @@ class Gen3DrsClient(DrsClient):
                 self.api_key = json.load(f)
             code = await self.update_access_token()
             if code == 401:
-                logger.error('Invalid access token in {}'.format(full_key_path))
+                logger.error("Invalid access token in {}".format(full_key_path))
                 self.api_key = None
             elif code != 200:
-                logger.error('Error {} getting Access token for {}'.format(code, self.endpoint))
-                logger.error('Using {}'.format(full_key_path))
+                logger.error(
+                    "Error {} getting Access token for {}".format(code, self.endpoint)
+                )
+                logger.error("Using {}".format(full_key_path))
                 self.api_key = None
         except Exception as e:
             self.api_key = None
@@ -51,33 +58,36 @@ class Gen3DrsClient(DrsClient):
     # Obtain an access_token using the provided Fence API key.
     # The client object will retain the access key for subsequent calls
     async def update_access_token(self):
-        headers = {'Content-Type': 'application/json'}
-        api_url = '{0}{1}'.format(self.endpoint, self.access_token_resource_path)
+        headers = {"Content-Type": "application/json"}
+        api_url = "{0}{1}".format(self.endpoint, self.access_token_resource_path)
         async with aiohttp.ClientSession(headers=headers) as session:
             response = await session.post(api_url, headers=headers, json=self.api_key)
             if response.status == 200:
                 resp = await response.json()
-                self.token = resp['access_token']
+                self.token = resp["access_token"]
                 self.authorized = True
             else:
                 self.authorized = False
         return response.status
 
-    async def download_part(self,
-                            drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
+    async def download_part(
+        self, drs_object: DrsObject, start: int, size: int, destination_path: Path
+    ) -> Optional[Path]:
         try:
 
             if not self.authorized:
                 await self.authorize()
 
-            headers = {'Range': f'bytes={start}-{size}'}
+            headers = {"Range": f"bytes={start}-{size}"}
 
-            file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
+            file_name = destination_path / f"{drs_object.name}.{start}.{size}.part"
             Path(file_name).parent.mkdir(parents=True, exist_ok=True)
 
             async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(drs_object.access_methods[0].access_url) as request:
-                    file = await aiofiles.open(file_name, 'wb')
+                async with session.get(
+                    drs_object.access_methods[0].access_url
+                ) as request:
+                    file = await aiofiles.open(file_name, "wb")
                     self.statistics.set_max_files_open()
                     async for data in request.content.iter_any():  # uses less memory
                         await file.write(data)
@@ -89,11 +99,11 @@ class Gen3DrsClient(DrsClient):
             return None
 
     async def sign_url(self, drs_object: DrsObject) -> DrsObject:
-        """Call fence's /user/data/download/ endpoint. """
+        """Call fence's /user/data/download/ endpoint."""
 
         headers = {
-            'authorization': 'Bearer ' + self.token,
-            'content-type': 'application/json'
+            "authorization": "Bearer " + self.token,
+            "content-type": "application/json",
         }
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(
@@ -103,9 +113,11 @@ class Gen3DrsClient(DrsClient):
                     self.statistics.set_max_files_open()
                     response.raise_for_status()
                     resp = await response.json(content_type=None)
-                    assert 'url' in resp, resp
-                    url_ = resp['url']
-                    drs_object.access_methods = [AccessMethod(access_url=url_, type='s3')]
+                    assert "url" in resp, resp
+                    url_ = resp["url"]
+                    drs_object.access_methods = [
+                        AccessMethod(access_url=url_, type="s3")
+                    ]
                     return drs_object
 
                 except ClientResponseError as e:
@@ -128,28 +140,30 @@ class Gen3DrsClient(DrsClient):
             await self.authorize()
 
         headers = {
-            'authorization': 'Bearer ' + self.token,
-            'content-type': 'application/json'
+            "authorization": "Bearer " + self.token,
+            "content-type": "application/json",
         }
 
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url=f"{self.endpoint}{self.drs_api}/{object_id.split(':')[-1]}") as response:
+            async with session.get(
+                url=f"{self.endpoint}{self.drs_api}/{object_id.split(':')[-1]}"
+            ) as response:
                 try:
                     self.statistics.set_max_files_open()
                     response.raise_for_status()
                     resp = await response.json(content_type=None)
 
-                    assert resp['checksums'][0]['type'] == 'md5', resp
-                    md5_ = resp['checksums'][0]['checksum']
-                    size_ = resp['size']
-                    name_ = resp['name']
+                    assert resp["checksums"][0]["type"] == "md5", resp
+                    md5_ = resp["checksums"][0]["checksum"]
+                    size_ = resp["size"]
+                    name_ = resp["name"]
                     return DrsObject(
                         self_uri=object_id,
                         size=size_,
-                        checksums=[Checksum(checksum=md5_, type='md5')],
+                        checksums=[Checksum(checksum=md5_, type="md5")],
                         id=object_id,
                         name=name_,
-                        access_methods=[AccessMethod(access_url="", type='gs')]
+                        access_methods=[AccessMethod(access_url="", type="gs")],
                     )
                 except ClientResponseError as e:
                     return DrsObject(
@@ -158,5 +172,5 @@ class Gen3DrsClient(DrsClient):
                         checksums=[],
                         size=0,
                         name=None,
-                        errors=[str(e)]
+                        errors=[str(e)],
                     )

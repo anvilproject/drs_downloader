@@ -10,10 +10,18 @@ import os
 import tqdm
 import tqdm.asyncio
 import sys
+
 # import time
 
-from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS, DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS, \
-    DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS, DEFAULT_PART_SIZE, MB, GB
+from drs_downloader import (
+    DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS,
+    DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS,
+    DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS,
+    DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS,
+    DEFAULT_PART_SIZE,
+    MB,
+    GB,
+)
 
 from drs_downloader.models import DrsClient, DrsObject
 
@@ -22,9 +30,9 @@ logger = logging.getLogger()
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setLevel(logging.DEBUG)
 
-file_handler = logging.FileHandler('drs_downloader.log')
+file_handler = logging.FileHandler("drs_downloader.log")
 file_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s %(message)s', datefmt="%Y-%m-%dT%H:%M:%S %Z")
+formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S %Z")
 # logging.Formatter.converter = gmtime
 file_handler.setFormatter(formatter)
 stdout_handler.setFormatter(formatter)
@@ -35,9 +43,7 @@ logger.addHandler(file_handler)
 
 
 class DrsManager(ABC):
-    """Manage DRSClient workload.
-
-    """
+    """Manage DRSClient workload."""
 
     @abstractmethod
     def __init__(self, drs_client: DrsClient):
@@ -53,7 +59,9 @@ class DrsManager(ABC):
         pass
 
     @abstractmethod
-    def download(self, drs_objects: List[DrsObject], destination_path: Path) -> List[DrsObject]:
+    def download(
+        self, drs_objects: List[DrsObject], destination_path: Path
+    ) -> List[DrsObject]:
         """Split the drs_objects into manageable parts, download the files.
 
         Args:
@@ -80,7 +88,6 @@ class DrsManager(ABC):
 
 
 class Wrapped(object):
-
     def __init__(self, file, hash_method):
         """
         Wrap the read() method and calculate hash
@@ -101,17 +108,18 @@ class Wrapped(object):
 
 
 class DrsAsyncManager(DrsManager):
-    """Manage DRSClient workload with asyncio threads, display progress.
+    """Manage DRSClient workload with asyncio threads, display progress."""
 
-    """
-
-    def __init__(self, drs_client: DrsClient,
-                 show_progress: bool = True,
-                 part_size: int = DEFAULT_PART_SIZE,
-                 max_simultaneous_object_retrievers=DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS,
-                 max_simultaneous_downloaders=DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS,
-                 max_simultaneous_part_handlers=DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS,
-                 max_simultaneous_object_signers=DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS):
+    def __init__(
+        self,
+        drs_client: DrsClient,
+        show_progress: bool = True,
+        part_size: int = DEFAULT_PART_SIZE,
+        max_simultaneous_object_retrievers=DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS,
+        max_simultaneous_downloaders=DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS,
+        max_simultaneous_part_handlers=DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS,
+        max_simultaneous_object_signers=DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS,
+    ):
         """
 
         Args:
@@ -132,7 +140,9 @@ class DrsAsyncManager(DrsManager):
         self.part_size = part_size
 
     @staticmethod
-    def _parts_generator(size: int, start: int = 0, part_size: int = None) -> Iterator[Tuple[int, int]]:
+    def _parts_generator(
+        size: int, start: int = 0, part_size: int = None
+    ) -> Iterator[Tuple[int, int]]:
         """Determine the start,size for each part
 
         Args:
@@ -149,7 +159,9 @@ class DrsAsyncManager(DrsManager):
             # start += part_size
         yield start, size
 
-    async def _run_download_parts(self, drs_object: DrsObject, destination_path: Path) -> DrsObject:
+    async def _run_download_parts(
+        self, drs_object: DrsObject, destination_path: Path
+    ) -> DrsObject:
         """Determine number of parts for signed url and create tasks for each part, run them in batches.
 
         Args:
@@ -160,48 +172,60 @@ class DrsAsyncManager(DrsManager):
         """
         # create a list of parts
         parts = []
-        for start, size in self._parts_generator(size=drs_object.size, part_size=self.part_size):
-            parts.append((start, size, ))
+        for start, size in self._parts_generator(
+            size=drs_object.size, part_size=self.part_size
+        ):
+            parts.append(
+                (
+                    start,
+                    size,
+                )
+            )
 
         if len(parts) > 1000:
             pass
             # logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
             # ({len(parts)})')
 
-        if (drs_object.size > 20 * MB):
+        if drs_object.size > 20 * MB:
             self.disable = False
         else:
             self.disable = True
 
         paths = []
         # TODO - tqdm ugly here?
-        for chunk_parts in \
-                tqdm.tqdm(DrsAsyncManager.chunker(parts, self.max_simultaneous_part_handlers),
-                          total=math.ceil(len(parts) / self.max_simultaneous_part_handlers),
-                          desc="File Download Progress", file=sys.stdout,
-                          leave=False, disable=self.disable):
+        for chunk_parts in tqdm.tqdm(
+            DrsAsyncManager.chunker(parts, self.max_simultaneous_part_handlers),
+            total=math.ceil(len(parts) / self.max_simultaneous_part_handlers),
+            desc="File Download Progress",
+            file=sys.stdout,
+            leave=False,
+            disable=self.disable,
+        ):
             chunk_tasks = []
             existing_chunks = []
             for start, size in chunk_parts:
                 # Check if part file exists and if so verify the expected size.
                 # If size matches the expected value then return the Path of the file_name for eventual reassembly.
                 # If size does not match then attempt to restart the download.
-                file_name = destination_path / f'{drs_object.name}.{start}.{size}.part'
+                file_name = destination_path / f"{drs_object.name}.{start}.{size}.part"
                 file_path = Path(file_name)
 
-                if (self.check_existing_parts(file_path, start, size)):
+                if self.check_existing_parts(file_path, start, size):
                     existing_chunks.append(file_path)
                     continue
 
-                task = asyncio.create_task(self._drs_client.download_part(drs_object=drs_object, start=start, size=size,
-                                                                          destination_path=destination_path))
+                task = asyncio.create_task(
+                    self._drs_client.download_part(
+                        drs_object=drs_object,
+                        start=start,
+                        size=size,
+                        destination_path=destination_path,
+                    )
+                )
                 chunk_tasks.append(task)
 
-            chunk_paths = [
-                await f
-                for f in
-                asyncio.as_completed(chunk_tasks)
-            ]
+            chunk_paths = [await f for f in asyncio.as_completed(chunk_tasks)]
             """
             Uncessesary logging message for the end user. When you take into account
             that most downloads are going to take longer than 15 minutes and this message
@@ -214,7 +238,12 @@ class DrsAsyncManager(DrsManager):
             chunk_paths.extend(existing_chunks)
             # something bad happened
             if None in chunk_paths:
-                if any(['RECOVERABLE in AIOHTTP' in str(error) for error in drs_object.errors]):
+                if any(
+                    [
+                        "RECOVERABLE in AIOHTTP" in str(error)
+                        for error in drs_object.errors
+                    ]
+                ):
                     return drs_object
                 else:
                     # logger.error(f"{drs_object.name} had missing part.")
@@ -230,14 +259,21 @@ class DrsAsyncManager(DrsManager):
                 return drs_object
         """
 
-        if (None not in chunk_paths and len(existing_chunks) == 0 and self.disable is True):
+        if (
+            None not in chunk_paths
+            and len(existing_chunks) == 0
+            and self.disable is True
+        ):
             pass
             # logger.info("%s Downloaded sucessfully", drs_object.name)
 
         drs_object.file_parts = paths
 
         i = 1
-        filename = f"{drs_object.name}" or drs_object.access_methods[0].access_url.split("/")[-1].split('?')[0]
+        filename = (
+            f"{drs_object.name}"
+            or drs_object.access_methods[0].access_url.split("/")[-1].split("?")[0]
+        )
         original_file_name = Path(filename)
         while True:
             if os.path.isfile(destination_path.joinpath(filename)):
@@ -249,21 +285,29 @@ class DrsAsyncManager(DrsManager):
         # re-assemble and test the file parts
         # hash function dynamic
         checksum_type = drs_object.checksums[0].type
-        assert checksum_type in hashlib.algorithms_available, f"Checksum {checksum_type} not supported."
+        assert (
+            checksum_type in hashlib.algorithms_available
+        ), f"Checksum {checksum_type} not supported."
         checksum = hashlib.new(checksum_type)
-        with open(destination_path.joinpath(filename), 'wb') as wfd:
+        with open(destination_path.joinpath(filename), "wb") as wfd:
             # sort the items of the list in place - Numerically based on start i.e. "xxxxxx.start.end.part"
-            drs_object.file_parts.sort(key=lambda x: int(str(x).split('.')[-3]))
+            drs_object.file_parts.sort(key=lambda x: int(str(x).split(".")[-3]))
 
             # T_0 = time.time()
-            for f in tqdm.tqdm(drs_object.file_parts, total=len(drs_object.file_parts),
-                               desc=f"       {drs_object.name} stitching", file=sys.stdout,
-                               leave=False, disable=self.disable):
-                fd = open(f, 'rb')  # NOT ASYNC
+            for f in tqdm.tqdm(
+                drs_object.file_parts,
+                total=len(drs_object.file_parts),
+                desc=f"       {drs_object.name} stitching",
+                file=sys.stdout,
+                leave=False,
+                disable=self.disable,
+            ):
+                fd = open(f, "rb")  # NOT ASYNC
                 wrapped_fd = Wrapped(fd, checksum)
                 # efficient way to write
-                await asyncio.to_thread(shutil.copyfileobj, wrapped_fd, wfd, 1024*1024*10)
-
+                await asyncio.to_thread(
+                    shutil.copyfileobj, wrapped_fd, wfd, 1024 * 1024 * 10
+                )
                 # explicitly close all
                 wrapped_fd.close()
                 f.unlink()
@@ -291,7 +335,9 @@ class DrsAsyncManager(DrsManager):
 
         return drs_object
 
-    async def _run_download(self, drs_objects: List[DrsObject], destination_path: Path) -> List[DrsObject]:
+    async def _run_download(
+        self, drs_objects: List[DrsObject], destination_path: Path
+    ) -> List[DrsObject]:
         """
         Create tasks to sign and download, display progress.
         Args:
@@ -307,27 +353,29 @@ class DrsAsyncManager(DrsManager):
             task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object))
             tasks.append(task)
 
-        drs_objects_with_signed_urls = [
-            await f for f in asyncio.as_completed(tasks)
-        ]
+        drs_objects_with_signed_urls = [await f for f in asyncio.as_completed(tasks)]
 
         tasks = []
         for drs_object in drs_objects_with_signed_urls:
             if len(drs_object.errors) == 0:
                 task = asyncio.create_task(
-                    self._run_download_parts(drs_object=drs_object, destination_path=destination_path))
+                    self._run_download_parts(
+                        drs_object=drs_object, destination_path=destination_path
+                    )
+                )
                 tasks.append(task)
             else:
-                logger.error(f"{drs_object.id} has error {drs_object.errors}, not attempting anything further")
+                logger.error(
+                    f"{drs_object.id} has error {drs_object.errors}, not attempting anything further"
+                )
 
-        drs_objects_with_file_parts = [
-            await f
-            for f in asyncio.as_completed(tasks)
-        ]
+        drs_objects_with_file_parts = [await f for f in asyncio.as_completed(tasks)]
 
         return drs_objects_with_file_parts
 
-    async def _run_get_objects(self, object_ids: List[str], leave: bool) -> List[DrsObject]:
+    async def _run_get_objects(
+        self, object_ids: List[str], leave: bool
+    ) -> List[DrsObject]:
         """Create async tasks to retrieve list DrsObject, displays progress.
 
         Args:
@@ -345,8 +393,13 @@ class DrsAsyncManager(DrsManager):
 
         signed_urls = [
             await f
-            for f in tqdm.tqdm(asyncio.as_completed(tasks), total=len(tasks), leave=leave,
-                               desc="retrieving object information", disable=self.disable)
+            for f in tqdm.tqdm(
+                asyncio.as_completed(tasks),
+                total=len(tasks),
+                leave=leave,
+                desc="retrieving object information",
+                disable=self.disable,
+            )
         ]
 
         return signed_urls
@@ -362,7 +415,7 @@ class DrsAsyncManager(DrsManager):
         Returns:
             an iterator that returns lists of size or less
         """
-        return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+        return (seq[pos: pos + size] for pos in range(0, len(seq), size))
 
     def get_objects(self, object_ids: List[str]) -> List[DrsObject]:
         """Create tasks for all object_ids, run them in batches, get information about the object.
@@ -373,22 +426,33 @@ class DrsAsyncManager(DrsManager):
 
         drs_objects = []
 
-        total_batches = math.ceil(len(object_ids) / self.max_simultaneous_object_retrievers)
+        total_batches = math.ceil(
+            len(object_ids) / self.max_simultaneous_object_retrievers
+        )
         # rounding
         # this would imply that if batch count is 9.3, and you round down the last .3 is never
         # actually downloaded since there are only 9 batches. math.ciel would round up if there is a decimal at all
 
         current = 0
 
-        for chunk_of_object_ids in DrsAsyncManager.chunker(object_ids, self.max_simultaneous_object_retrievers):
+        for chunk_of_object_ids in DrsAsyncManager.chunker(
+            object_ids, self.max_simultaneous_object_retrievers
+        ):
 
             drs_objects.extend(
-                asyncio.run(self._run_get_objects(object_ids=chunk_of_object_ids, leave=(current == total_batches))))
+                asyncio.run(
+                    self._run_get_objects(
+                        object_ids=chunk_of_object_ids, leave=(current == total_batches)
+                    )
+                )
+            )
             current += 1
 
         return drs_objects
 
-    def download(self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool) -> List[DrsObject]:
+    def download(
+        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool
+    ) -> List[DrsObject]:
         """Split the drs_objects into manageable sizes, download the files.
 
         Args:
@@ -400,31 +464,42 @@ class DrsAsyncManager(DrsManager):
         """
         while True:
 
-            filtered_objects = self.filter_existing_files(drs_objects, destination_path, duplicate=duplicate)
+            filtered_objects = self.filter_existing_files(
+                drs_objects, destination_path, duplicate=duplicate
+            )
             if len(filtered_objects) < len(drs_objects):
-                complete_objects = [obj for obj in drs_objects if obj not in filtered_objects]
+                complete_objects = [
+                    obj for obj in drs_objects if obj not in filtered_objects
+                ]
                 for obj in complete_objects:
                     pass
                     # logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
 
                 if len(filtered_objects) == 0:
-                    logger.info(f"All DRS objects already present in {destination_path}.")
+                    logger.info(
+                        f"All DRS objects already present in {destination_path}."
+                    )
                     return
 
             current = 0
             updated_drs_objects = []
 
-            for chunk_of_drs_objects in DrsAsyncManager.chunker(filtered_objects,
-                                                                self.max_simultaneous_object_retrievers):
+            for chunk_of_drs_objects in DrsAsyncManager.chunker(
+                filtered_objects, self.max_simultaneous_object_retrievers
+            ):
 
-                completed_chunk = asyncio.run(self._run_download(drs_objects=chunk_of_drs_objects,
-                                                                 destination_path=destination_path))
+                completed_chunk = asyncio.run(
+                    self._run_download(
+                        drs_objects=chunk_of_drs_objects,
+                        destination_path=destination_path,
+                    )
+                )
                 current += 1
                 updated_drs_objects.extend(completed_chunk)
 
             # logger.info(f"UPDATED DRS OBJECTS \n\n {updated_drs_objects}")
 
-            if ('RECOVERABLE in AIOHTTP' not in str(updated_drs_objects)):
+            if "RECOVERABLE in AIOHTTP" not in str(updated_drs_objects):
                 break
 
             else:
@@ -436,7 +511,9 @@ class DrsAsyncManager(DrsManager):
 
         return updated_drs_objects
 
-    def optimize_workload(self, silent, drs_objects: List[DrsObject]) -> List[DrsObject]:
+    def optimize_workload(
+        self, silent, drs_objects: List[DrsObject]
+    ) -> List[DrsObject]:
         """
         Optimize the workload, sort prioritize and set thread management parameters.
         Args:
@@ -456,35 +533,36 @@ class DrsAsyncManager(DrsManager):
             self.part_size = 64 * MB
             self.max_simultaneous_downloaders = 10
             if not silent:
-                logger.info('part_size=%s', self.part_size)
+                logger.info("part_size=%s", self.part_size)
 
         elif any(True for drs_object in drs_objects if (int(drs_object.size) > GB)):
             self.max_simultaneous_part_handlers = 3
             self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
             if not silent:
-                logger.info('part_size=%s', self.part_size)
+                logger.info("part_size=%s", self.part_size)
 
         elif all((drs_object.size < (5 * MB)) for drs_object in drs_objects):
             self.part_size = 1 * MB
             self.max_simultaneous_part_handlers = 2
             self.max_simultaneous_downloaders = 10
             if not silent:
-                logger.info('part_size=%s', self.part_size)
-                logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
+                logger.info("part_size=%s", self.part_size)
+                logger.info("part_handlers=%s", self.max_simultaneous_part_handlers)
 
         else:
             self.part_size = 10 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
             if not silent:
-                logger.info('part_size=%s', self.part_size)
-                logger.info('part_handlers=%s', self.max_simultaneous_part_handlers)
+                logger.info("part_size=%s", self.part_size)
+                logger.info("part_handlers=%s", self.max_simultaneous_part_handlers)
 
         return drs_objects
 
-    def filter_existing_files(self, drs_objects: List[DrsObject],
-                              destination_path: Path, duplicate: bool) -> List[DrsObject]:
+    def filter_existing_files(
+        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool
+    ) -> List[DrsObject]:
         """Remove any DRS objects from a given list if they are already exist in the destination directory.
 
         Args:
@@ -496,10 +574,12 @@ class DrsAsyncManager(DrsManager):
         """
 
         # logger.info(f"VALUE OF duplicate {duplicate}")
-        if (duplicate is True):
+        if duplicate is True:
             return drs_objects
 
-        filtered_objects = [drs for drs in drs_objects if (drs.name not in os.listdir(destination_path))]
+        filtered_objects = [
+            drs for drs in drs_objects if (drs.name not in os.listdir(destination_path))
+        ]
         # logger.info(f"VALUE OF FILTERED OBJECTS {filtered_objects}")
 
         return filtered_objects
@@ -517,7 +597,7 @@ class DrsAsyncManager(DrsManager):
             bool: True if the file part exists in the destination and has the expected file size, False otherwise
         """
 
-        if (file_path.exists()):
+        if file_path.exists():
             expected_size = size - start + 1
             # logger.info(f"EXPTECTED SIZE {expected_size}")
 

@@ -10,6 +10,7 @@ import shutil
 import tempfile
 from pathlib import Path
 import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
@@ -28,7 +29,9 @@ def test_interrupted_download(caplog):
 
     caplog.set_level(logging.INFO)
     complete_files = sorted(next(os.walk(COMPLETE_DOWNLOAD))[2])
-    assert len(complete_files) == 10  # asserting that the fixtures have the expected number of files
+    assert (
+        len(complete_files) == 10
+    )  # asserting that the fixtures have the expected number of files
 
     with tempfile.TemporaryDirectory() as dest:
         for file in os.listdir(INTERRUPTED_DOWNLOAD):
@@ -37,7 +40,9 @@ def test_interrupted_download(caplog):
         assert _are_dirs_equal(COMPLETE_DOWNLOAD, dest) is False
 
         runner = CliRunner()
-        result = runner.invoke(cli, ['terra', '-d', dest, '-m', MANIFESTS / 'terra-data.tsv'])
+        result = runner.invoke(
+            cli, ["terra", "-d", dest, "-m", MANIFESTS / "terra-data.tsv"]
+        )
         assert result.exit_code == 0
 
         assert _are_dirs_equal(COMPLETE_DOWNLOAD, dest) is True
@@ -46,7 +51,9 @@ def test_interrupted_download(caplog):
         # assert "HG00536.final.cram.crai had 1 existing parts." in caplog.messages
 
         # Run the downloader again in the destination directory to verify that all DRS objects are present
-        result = runner.invoke(cli, ['terra', '-d', dest, '-m', MANIFESTS / 'terra-data.tsv'])
+        result = runner.invoke(
+            cli, ["terra", "-d", dest, "-m", MANIFESTS / "terra-data.tsv"]
+        )
         assert result.exit_code == 0
         assert f"All DRS objects already present in {dest}." in caplog.messages
 
@@ -93,20 +100,20 @@ def test_check_existing_files():
         assert len(filtered_objects) == len(drs_objects) - 1
 
     complete_parts = [
-        'HG00536.final.cram.crai.0.1048576.part',
-        'HG00622.final.cram.crai.0.1048576.part',
-        'HG02450.final.cram.crai.0.1048576.part'
+        "HG00536.final.cram.crai.0.1048576.part",
+        "HG00622.final.cram.crai.0.1048576.part",
+        "HG02450.final.cram.crai.0.1048576.part",
     ]
 
     incomplete_parts = [
-        'HG00536.final.cram.crai.1048577.1244278.part',
-        'HG01552.final.cram.crai.0.1048576.part',
-        'HG02142.final.cram.crai.0.1048576.part',
-        'HG02450.final.cram.crai.1048577.1405458.part',
-        'HG03873.final.cram.crai.0.1048576.part',
-        'NA18613.final.cram.crai.0.1048576.part',
-        'NA20356.final.cram.crai.0.1048576.part',
-        'NA20525.final.cram.crai.0.1048576.part'
+        "HG00536.final.cram.crai.1048577.1244278.part",
+        "HG01552.final.cram.crai.0.1048576.part",
+        "HG02142.final.cram.crai.0.1048576.part",
+        "HG02450.final.cram.crai.1048577.1405458.part",
+        "HG03873.final.cram.crai.0.1048576.part",
+        "NA18613.final.cram.crai.0.1048576.part",
+        "NA20356.final.cram.crai.0.1048576.part",
+        "NA20525.final.cram.crai.0.1048576.part",
     ]
 
     with tempfile.TemporaryDirectory() as dest:

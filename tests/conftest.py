@@ -5,8 +5,7 @@ from pathlib import Path
 
 @pytest.fixture(autouse=True, scope="module")
 def clean_current_directory():
-    """Remove files created by the test functions within the current working directory.
-    """
+    """Remove files created by the test functions within the current working directory."""
 
     old_cwd = os.listdir(os.getcwd())
     yield

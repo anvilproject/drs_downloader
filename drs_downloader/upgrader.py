@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)  # these control our simulation
 
 class Upgrader(ABC):
     def __init__(self):
-        release_path = 'anvilproject/drs_downloader/releases/latest'
-        self.release_url = f'https://github.com/{release_path}'
-        self.api_url = f'https://api.github.com/repos/{release_path}'
+        release_path = "anvilproject/drs_downloader/releases/latest"
+        self.release_url = f"https://github.com/{release_path}"
+        self.api_url = f"https://api.github.com/repos/{release_path}"
 
     def upgrade(self, dest: str = os.getcwd(), force=False):
         """Upgrades the drs_downloader executable and backups the old version to drs_downloader.bak/
@@ -35,35 +35,36 @@ class Upgrader(ABC):
         """
 
         # Perform upgrade only if the program is being run as an executable and not as a script
-        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-            logger.info('running in a PyInstaller bundle')
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            logger.info("running in a PyInstaller bundle")
         else:
-            logger.info('Running from a script')
+            logger.info("Running from a script")
 
         # Upgrade if newer version is available
         json = requests.get(self.api_url).json()
-        new_version = version.parse(json['tag_name'])
+        new_version = version.parse(json["tag_name"])
         current_version = version.parse(__version__)
 
-        if (current_version >= new_version):
-            logger.info('Latest version already installed')
+        if current_version >= new_version:
+            logger.info("Latest version already installed")
             if force is False:
                 return
 
         # Determine download url for operating system
         system = platform.system()
-        if (system == 'Darwin'):
-            zip = 'drs-downloader-macOS.zip'
-        elif (system == 'Linux'):
-            zip = 'drs-downloader-Linux.zip'
-        elif (system == 'Windows'):
-            zip = 'drs-downloader-Windows.zip'
+        if system == "Darwin":
+            zip = "drs-downloader-macOS.zip"
+        elif system == "Linux":
+            zip = "drs-downloader-Linux.zip"
+        elif system == "Windows":
+            zip = "drs-downloader-Windows.zip"
         else:
             raise Exception(
-                f'Unknown operating system detected. See the release page for manual upgrade: {self.release_url}')
+                f"Unknown operating system detected. See the release page for manual upgrade: {self.release_url}"
+            )
 
-        download_url = f'{self.release_url}/download/{zip}'
-        checksum_url = f'{self.release_url}/download/checksums.txt'
+        download_url = f"{self.release_url}/download/{zip}"
+        checksum_url = f"{self.release_url}/download/checksums.txt"
 
         # Download zip and checksum files to temporary directory for checksum verification
         zip_path = None
@@ -74,14 +75,14 @@ class Upgrader(ABC):
             checksum_path = self._download_file(checksum_url, tmp_dir)
 
             checksums_match = self._verify_checksums(zip_path, checksum_path)
-            if (checksums_match is False):
+            if checksums_match is False:
                 raise Exception("Actual hash does not match expected hash")
 
             # Backup old executable
             self._backup(dest)
 
             # Move new executable to current directory
-            with ZipFile(zip_path, 'r') as zip_file:
+            with ZipFile(zip_path, "r") as zip_file:
                 zip_file.extractall(path=Path(dest))
 
     def _backup(self, dest: str):
@@ -95,12 +96,12 @@ class Upgrader(ABC):
             dest (str): download destination
         """
 
-        name = 'drs_downloader'
+        name = "drs_downloader"
         download_file = Path(dest, name)
-        if (download_file.is_file() is False):
+        if download_file.is_file() is False:
             return
 
-        backup_dir = Path(dest, f'{name}.bak')
+        backup_dir = Path(dest, f"{name}.bak")
         backup_dir.mkdir(parents=True, exist_ok=True)
 
         old_executable = Path(dest, name)
@@ -122,9 +123,9 @@ class Upgrader(ABC):
         """
 
         response = requests.get(url)
-        file_name = url.split('/')[-1]
+        file_name = url.split("/")[-1]
         path = Path(dest, file_name)
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             f.write(response.content)
 
         return path
@@ -140,17 +141,17 @@ class Upgrader(ABC):
             bool: True if the expected and actual checksums match, False otherwise
         """
 
-        expected_sha = ''
-        with open(checksums, 'r') as checksum_file:
+        expected_sha = ""
+        with open(checksums, "r") as checksum_file:
             lines = checksum_file.readlines()
             for line in lines:
                 # If filename is found then use that checksum as the expected value
-                if (file.stem in line):
+                if file.stem in line:
                     expected_sha = line.split()[0]
 
         # Verify checksums
         sha_hash = hashlib.sha256()
-        sha_hash.update(open(file, 'rb').read())
+        sha_hash.update(open(file, "rb").read())
         actual_sha = sha_hash.hexdigest()
 
         return expected_sha == actual_sha
