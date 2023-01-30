@@ -82,17 +82,17 @@ jobs:
 
       - name: Prepare artifact for release (macOS and Ubuntu)
         if: runner.os != 'Windows'
-        run: zip -j drs-downloader-${{ runner.os }}.zip dist/drs_downloader
+        run: mv dist/drs_downloader drs-downloader-${{ runner.os }}
 
       - name: Prepare artifact for release (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: 7z a drs-downloader-${{ runner.os }}.zip ./dist/drs_downloader.exe
+        run: mv ./dist/drs_downloader.exe drs-downloader-${{ runner.os }} 
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: drs-downloader-${{ runner.os }}.zip
+          files: drs-downloader-${{ runner.os }}
 
   checksums:
     needs: build
@@ -105,7 +105,7 @@ jobs:
 
       - name: Create checksums
         shell: bash
-        run: sha256sum drs-downloader-*.zip > checksums.txt
+        run: sha256sum drs-downloader-* > checksums.txt
 
       - name: Upload checksums
         uses: softprops/action-gh-release@v1
