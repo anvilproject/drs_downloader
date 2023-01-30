@@ -74,7 +74,7 @@ class MockDrsClient(DrsClient):
         # logger.info((drs_object.name, start, length_))
         # logger.error("ERROR1 %s",drs_object)
 
-        if "BAD_ID" in drs_object.self_uri:
+        if BAD_ID in drs_object.self_uri:
             logger.warning(f"Mock bad id {drs_object.self_uri}")
             drs_object.errors = ["Mock error BAD_ID"]
             return None
@@ -144,7 +144,7 @@ class MockDrsClient(DrsClient):
             size_ += 1000
 
         return DrsObject(
-            self_uri=f"drs://{object_id}",
+            self_uri=object_id,
             size=size_,
             # md5, etag, crc32c, trunc512, or sha1
             checksums=[checksum],
