@@ -18,7 +18,11 @@ name: DRS Downloader
 
 on:
   push:
-    branches: [ "feature/**" ]
+    branches: [ "main", "feature/**" ]
+    tags:
+      - '**'
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: write
@@ -58,24 +62,52 @@ jobs:
 #        run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
 
   build:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-latest", "ubuntu-20.04"]
+        os: ["macos-latest", "ubuntu-latest", "windows-latest"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt -r requirements-dev.txt
-          pyinstaller drs_downloader/cli.py --onefile --name drs_downloader-${{ runner.os }}
+          pip install -r requirements.txt pyinstaller
+          pyinstaller drs_downloader/cli.py --onefile --name drs_downloader
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+      - name: Prepare artifact for release (macOS and Ubuntu)
+        if: runner.os != 'Windows'
+        run: zip -j drs-downloader-${{ runner.os }}.zip dist/drs_downloader
+
+      - name: Prepare artifact for release (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: 7z a drs-downloader-${{ runner.os }}.zip ./dist/drs_downloader.exe
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: drs_downloader-${{ runner.os }}
-          path: dist/drs_downloader-${{ runner.os }}
+          files: drs-downloader-${{ runner.os }}.zip
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: robinraju/release-downloader@v1.6
+        with:
+          latest: true
+          fileName: "*"
+
+      - name: Create checksums
+        shell: bash
+        run: sha256sum drs-downloader-*.zip > checksums.txt
+
+      - name: Upload checksums
+        uses: softprops/action-gh-release@v1
+        with:
+          files: checksums.txt

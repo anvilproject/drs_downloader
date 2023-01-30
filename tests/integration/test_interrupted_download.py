@@ -99,12 +99,14 @@ def test_check_existing_files():
         filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace)
         assert len(filtered_objects) == len(drs_objects) - 1
 
+    # Part files that have been completely downloaded
     complete_parts = [
         "HG00536.final.cram.crai.0.1048576.part",
         "HG00622.final.cram.crai.0.1048576.part",
         "HG02450.final.cram.crai.0.1048576.part",
     ]
 
+    # Part files that were incompletely downloaded when the download terminated
     incomplete_parts = [
         "HG00536.final.cram.crai.1048577.1244278.part",
         "HG01552.final.cram.crai.0.1048576.part",
