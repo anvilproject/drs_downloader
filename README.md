@@ -7,7 +7,6 @@
 
 A file download tool for AnVIL/TDR data identified by DRS URIs
 
-
 - [Installation](#installation)
   - [Checksum Verification](#checksum-verification)
 - [Running the Executable](#running-the-executable)
@@ -23,11 +22,11 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 ## Installation
 
-| Operating System | DRS Downloader                        | Checksum                       |
-| ---------------- | ------------------------------------- | ------------------------------ |
-| MacOS            | [drs-downloader-macOS][macos]     | [checksums.txt](checksums.txt)     |
-| Linux            | [drs-downloader-Linux](Linux)     | [checksums.txt](checksums.txt) |
-| Windows          | [drs-downloader-Windows](Windows) | [checksums.txt](checksums.txt) |
+| Operating System | DRS Downloader                    | Checksum                   |
+| ---------------- | --------------------------------- | -------------------------- |
+| MacOS            | [drs-downloader-macOS][macos]     | [checksums.txt][checksums] |
+| Linux            | [drs-downloader-Linux][linux]     | [checksums.txt][checksums] |
+| Windows          | [drs-downloader-Windows][windows] | [checksums.txt][checksums] |
 
 [macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS
 [linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux
@@ -51,6 +50,7 @@ drs-downloader-macOS.zip: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
+
 </details>
 
 <details>
@@ -66,9 +66,11 @@ shasum: checksums.txt: no file was verified
 ```
 
 In such a case please reach out to the contributors for assistance.
+
 </details>
 
 ## Running the Executable
+
 For Linux to run the exe you will have to grant the file higher permissions. you can do this by running:
 
 ```sh
@@ -78,14 +80,12 @@ chmod +x [filename]
 For mac you will also have to navigate to:
 System Preferences -> Security & Privacy -> Click button allow Exe to run
 
-
-
 ### Requirements
 
 The downloader requires that a Google Cloud project be designated as the billing project. In order for the downloader to authenticate and set the desired billing project the gcloud CLI tool must first be installed:
 
-* [gcloud CLI](https://cloud.google.com/sdk/docs/install) — used to authenticate the downloader and set the billing project.
-* [Python](https://www.python.org/) — required for gcloud CLI functionality.
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install) — used to authenticate the downloader and set the billing project.
+- [Python](https://www.python.org/) — required for gcloud CLI functionality.
 
 #### Authentication
 
@@ -120,31 +120,35 @@ $ drs_downloader terra -m <manifest file> -d <destination directory>
 #### Arguments
 
 `-s, --silent`
+
 > Disables all output to the terminal during and after downloading.
 
 `-d, --destination_dir TEXT`
+
 > The directory or folder to download the DRS Objects to. Defaults to `/tmp/testing` if no value is provided.
 
 `-m, --manifest_path TEXT`
+
 > The manifest file that contains the DRS Objects to be downloaded. Typically a TSV file with one row per DRS Object.
 
 `--drs_header TEXT`
+
 > The value of the column in the manifest file containing the DRS Object IDs. Defaults to `pfb:ga4gh_drs_uri` if no value is provided.
 
-`--duplicate` 
->  downloads files and saves them into the specified directory even if there is already files with the same name already in the directory. Numbered naming is used
->  to specify the order of duplicates downloaded to the directory. For example: 1st -> original_file 2nd -> original_file(1) 3rd-> original_file(2) ... 
+`--duplicate`
+
+> downloads files and saves them into the specified directory even if there is already files with the same name already in the directory. Numbered naming is used
+> to specify the order of duplicates downloaded to the directory. For example: 1st -> original_file 2nd -> original_file(1) 3rd-> original_file(2) ...
 
 ### Basic Example
 
 The below command is a basic example of how to structure a download command with all of the required arguments. It uses:
 
-* a **manifest file** called [`terra-data.tsv`][terra-data] with 10 DRS Objects
-* a **DRS header value** of `pfb:ga4gh_drs_uri` within the manifest file to reference the DRS Objects. It can be omitted since this is the default value used by the downloader.
-* a **download directory** called `DATA` as the destination
+- a **manifest file** called [`terra-data.tsv`][terra-data] with 10 DRS Objects
+- a **DRS header value** of `pfb:ga4gh_drs_uri` within the manifest file to reference the DRS Objects. It can be omitted since this is the default value used by the downloader.
+- a **download directory** called `DATA` as the destination
 
 [terra-data]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-data.tsv
-
 
 ```sh
 $ drs_downloader terra -m tests/fixtures/manifest/terra-data.tsv -d DATA
@@ -184,7 +188,7 @@ drs_downloader terra -m tests/fixtures/manifests/terra-different-header.tsv -d D
 
 This will download the DRS Objects specified in the `drs_uri` column into the `DATA` directory just as before.
 
-[terra-different-header]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-different-header.tsv 
+[terra-different-header]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-different-header.tsv
 
 ### Help/Additional Options
 
