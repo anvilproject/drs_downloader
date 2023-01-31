@@ -2,11 +2,11 @@ import hashlib
 import logging
 import os
 import platform
+import shutil
 import sys
 import tempfile
 from abc import ABC
 from pathlib import Path
-from zipfile import ZipFile
 
 import requests
 from packaging import version
@@ -22,7 +22,7 @@ class Upgrader(ABC):
         self.release_url = f"https://github.com/{release_path}"
         self.api_url = f"https://api.github.com/repos/{release_path}"
 
-    def upgrade(self, dest: str = os.getcwd(), force=False):
+    def upgrade(self, dest: str = os.getcwd(), force=False) -> Path:
         """Upgrades the drs_downloader executable and backups the old version to drs_downloader.bak/
 
         Args:
@@ -32,6 +32,9 @@ class Upgrader(ABC):
         Raises:
             Exception: If the operating system can not be reliably determined
             Exception: If the checksum for the new executable does not match the expected value
+
+        Returns:
+            Path: The downloaded executable.
         """
 
         # Perform upgrade only if the program is being run as an executable and not as a script
@@ -53,66 +56,65 @@ class Upgrader(ABC):
         # Determine download url for operating system
         system = platform.system()
         if system == "Darwin":
-            zip = "drs-downloader-macOS.zip"
+            exe = "drs-downloader-macOS"
         elif system == "Linux":
-            zip = "drs-downloader-Linux.zip"
+            exe = "drs-downloader-Linux"
         elif system == "Windows":
-            zip = "drs-downloader-Windows.zip"
+            exe = "drs-downloader-Windows"
         else:
             raise Exception(
                 f"Unknown operating system detected. See the release page for manual upgrade: {self.release_url}"
             )
 
-        download_url = f"{self.release_url}/download/{zip}"
+        download_url = f"{self.release_url}/download/{exe}"
         checksum_url = f"{self.release_url}/download/checksums.txt"
 
-        # Download zip and checksum files to temporary directory for checksum verification
-        zip_path = None
-        checksum_path = None
+        # Download executable and checksum files to temporary directory for checksum verification
+        verified_exe = None
 
+        # We use a temporary directory here to prevent files that might not pass the
+        # checksum step from remaining in the user's filesystem.
         with tempfile.TemporaryDirectory() as tmp_dir:
-            zip_path = self._download_file(download_url, tmp_dir)
+            unverified_exe = self._download_file(download_url, tmp_dir)
             checksum_path = self._download_file(checksum_url, tmp_dir)
 
-            checksums_match = self._verify_checksums(zip_path, checksum_path)
+            checksums_match = self._verify_checksums(unverified_exe, checksum_path)
             if checksums_match is False:
                 raise Exception("Actual hash does not match expected hash")
 
             # Backup old executable
-            self._backup(dest)
+            self._backup(Path(dest, exe))
 
-            # Move new executable to current directory
-            with ZipFile(zip_path, "r") as zip_file:
-                zip_file.extractall(path=Path(dest))
+            # If checksum is verified move new executable to current directory
+            verified_exe = shutil.move(unverified_exe, dest)
 
-    def _backup(self, dest: str):
+        return Path(verified_exe)
+
+    def _backup(self, old_exe: Path):
         """Backups the executable if it is already present in the destination directory.
 
         Example:
-            Download destination is /home/liam and /home/liam/drs_downloader already
-            exists so it will be moved to /home/liam/drs_downloader.bak/drs_downloader.
+            Download destination is /Users/liam and /Users/liam/drs_downloader-macOS already
+            exists so it will be moved to /Users/liam/drs-downloader-macOS.bak/drs-downloader-macOS.
 
         Args:
             dest (str): download destination
         """
 
-        name = "drs_downloader"
-        download_file = Path(dest, name)
-        if download_file.is_file() is False:
+        if old_exe.is_file() is False:
             return
 
-        backup_dir = Path(dest, f"{name}.bak")
+        backup_dir = Path(old_exe.parent, f"{old_exe.name}.bak")
         backup_dir.mkdir(parents=True, exist_ok=True)
 
-        old_executable = Path(dest, name)
-        old_executable.rename(Path(backup_dir, name))
+        shutil.move(old_exe, backup_dir)
 
     def _download_file(self, url: str, dest: str) -> Path:
         """Downloads a file given an URL.
 
         Example:
-            url is https://example.com/foo.zip and dest is /home/liam so foo
-            will be downloaded to /home/liam/foo.zip
+            url is https://example.com/foo.zip and dest is /Users/liam so foo
+            will be downloaded to /Users/liam/foo.zip
 
         Args:
             url (str): URL to request the file from
