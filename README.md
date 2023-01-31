@@ -33,7 +33,7 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 [windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows
 [checksums]: https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt
 
-Download the latest `drs_downloader` zip file for your operating system. Unzipping the downloaded file will provide a `drs_downloader` executable file that can be run directly.
+Download the latest `drs-downloader` file for your operating system.
 
 ### Checksum Verification
 
@@ -42,11 +42,11 @@ In order to verify that the downloaded file can be trusted checksums are provide
 <details>
 <summary>Successful Verification</summary>
 
-To verify the integrity of the binaries on macOS run the following in the same directory as the downloaded zip file:
+To verify the integrity of the binaries on macOS run the following in the same directory as the downloaded file:
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS.zip: OK
+drs-downloader-macOS: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
@@ -60,7 +60,7 @@ Alternatively if the commad outputs `FAILED` than the checksum did not match and
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS.zip: FAILED
+drs-downloader-macOS: FAILED
 shasum: WARNING: 1 computed checksum did NOT match
 shasum: checksums.txt: no file was verified
 ```
