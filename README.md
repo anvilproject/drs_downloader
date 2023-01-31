@@ -25,13 +25,13 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 | Operating System | DRS Downloader                        | Checksum                       |
 | ---------------- | ------------------------------------- | ------------------------------ |
-| MacOS            | [drs-downloader-macOS.zip][macos]     | [checksums.txt](checksums)     |
-| Linux            | [drs-downloader-Linux.zip](Linux)     | [checksums.txt](checksums.txt) |
-| Windows          | [drs-downloader-Windows.zip](Windows) | [checksums.txt](checksums.txt) |
+| MacOS            | [drs-downloader-macOS][macos]     | [checksums.txt](checksums.txt)     |
+| Linux            | [drs-downloader-Linux](Linux)     | [checksums.txt](checksums.txt) |
+| Windows          | [drs-downloader-Windows](Windows) | [checksums.txt](checksums.txt) |
 
-[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS.zip
-[linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux.zip
-[windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows.zip
+[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS
+[linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux
+[windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows
 [checksums]: https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt
 
 Download the latest `drs_downloader` zip file for your operating system. Unzipping the downloaded file will provide a `drs_downloader` executable file that can be run directly.
