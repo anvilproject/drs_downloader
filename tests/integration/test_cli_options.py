@@ -17,6 +17,7 @@ def test_duplicate_uris():
             cli,
             [
                 "terra",
+                "-v",
                 "-d",
                 dest,
                 "--manifest-path",
@@ -34,6 +35,7 @@ def test_terra_one_file():
             cli,
             [
                 "terra",
+                "-v",
                 "-d",
                 dest,
                 "--manifest-path",
@@ -84,7 +86,7 @@ def test_terra(tmp_path, caplog):
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["terra", "-d", tmp_path, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        ["terra", "-d", tmp_path, "--verbose", "--manifest-path", "tests/fixtures/terra-data.tsv"],
     )
     assert result.exit_code == 0
 
@@ -113,7 +115,7 @@ def test_terra_default_cwd():
     pre_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
     result = runner.invoke(
         cli,
-        ["terra", "--duplicate", "--manifest-path", "tests/fixtures/terra-data.tsv"],
+        ["terra", "-v", "--duplicate", "--manifest-path", "tests/fixtures/terra-data.tsv"],
     )
     post_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
 
@@ -151,9 +153,10 @@ def test_terra_silent():
             cli,
             [
                 "terra",
+                "-v",
                 "-d",
                 dest,
-                "--silent",
+                "--verbose",
                 "--manifest-path",
                 "tests/fixtures/terra-data.tsv",
             ],
@@ -166,16 +169,19 @@ def test_optimizer_part_size(caplog):
         runner = CliRunner()
         runner.invoke(
             cli,
-            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+            ["terra", "-v", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
         )
-        messages = caplog.messages
+        print(f"THE VLAUE OF MESSAGES {str(caplog.messages)}")
         part_size = int(
             [
-                messages[messages.index(message)]
-                for message in messages
+                caplog.messages[caplog.messages.index(message)]
+                for message in caplog.messages
                 if ("part_size" in message)
             ][0].split("=")[-1]
+
         )
+        print(f'============== THE VALUE OF PART SIZE {int(part_size)}')
+
         assert part_size == (1 * 1024**2)
 
 
@@ -184,7 +190,7 @@ def test_optimizer_simul_part_handlers(caplog):
         runner = CliRunner()
         runner.invoke(
             cli,
-            ["terra", "-d", dest, "--manifest-path", "tests/fixtures/terra-data.tsv"],
+            ["terra", "-d", dest, "-v", "--manifest-path", "tests/fixtures/terra-data.tsv"],
         )
         messages = caplog.messages
         # print("THE VALUE OF MESSAGES ", messages)
@@ -204,6 +210,7 @@ def test_optimizer_part_size_large_file():
         [
             "drs_download",
             "terra",
+            "-v",
             "--manifest-path",
             "tests/fixtures/mixed_file_sizes.tsv",
         ]

@@ -9,6 +9,8 @@ import certifi
 import ssl
 import logging
 import google.auth.transport.requests
+import time
+import random
 
 from aiohttp import ClientResponseError, ClientConnectorError
 
@@ -56,7 +58,7 @@ class TerraDrsClient(DrsClient):
         return token
 
     async def download_part(
-        self, drs_object: DrsObject, start: int, size: int, destination_path: Path
+        self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool
     ) -> Optional[Path]:
         tries = 0
         while True:
@@ -82,20 +84,24 @@ class TerraDrsClient(DrsClient):
 
             except aiohttp.ClientResponseError as f:
                 tries += 1
+                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 3:
-                    # logger.info(f"Error Text Body {str(text)}")
+                    if verbose:
+                        logger.info(f"Error Text Body {str(text)}")
                     if "The provided token has expired" in str(text):
                         drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
                         return None
 
             except Exception as e:
                 tries += 1
+                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 3:
-                    # logger.info(f"Miscellaneous Error {str(text)}")
+                    if verbose:
+                        logger.info(f"Miscellaneous Error {str(text)}")
                     drs_object.errors.append(f"NONRECOVERABLE ERROR {str(e)}")
                     return None
 
-    async def sign_url(self, drs_object: DrsObject) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject, verbose: bool) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object`"""
 
         assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
@@ -113,52 +119,58 @@ class TerraDrsClient(DrsClient):
             ):  # This is here so that URL signing errors are caught they are rare, but I did capture one
                 try:
                     async with session.post(url=self.endpoint, json=data, ssl=context) as response:
-                        try:
-                            self.statistics.set_max_files_open()
-                            response.raise_for_status()
-                            resp = await response.json(content_type=None)
-                            assert "accessUrl" in resp, resp
-                            if resp["accessUrl"] is None:
-                                account_command = "gcloud config get-value account"
-                                cmd = account_command.split(" ")
-                                account = subprocess.check_output(cmd).decode("ascii")
-                                raise Exception(
-                                    f"A valid URL was not returned from the server. \
-                                    Please check the access for {account}\n{resp}"
-                                )
-                            url_ = resp["accessUrl"]["url"]
-                            type = "none"
-                            if "storage.googleapis.com" in url_:
-                                type = "gs"
+                        while (True):
+                            try:
+                                self.statistics.set_max_files_open()
 
-                            drs_object.access_methods = [
-                                AccessMethod(access_url=url_, type=type)
-                            ]
-                            return drs_object
-                        except ClientResponseError as e:
-                            drs_object.errors.append(str(e))
-                            # logger.error(f"A file has failed the signing process, specifically {str(e)}")
-                            return drs_object
+                                # these lines produced an error saying that the content.read() had already closed
+                                # if response.status > 399:
+                                # text = await response.content.read()
+
+                                response.raise_for_status()
+                                resp = await response.json(content_type=None)
+                                assert "accessUrl" in resp, resp
+                                if resp["accessUrl"] is None:
+                                    account_command = "gcloud config get-value account"
+                                    cmd = account_command.split(" ")
+                                    account = subprocess.check_output(cmd).decode("ascii")
+                                    raise Exception(
+                                        f"A valid URL was not returned from the server. \
+                                        Please check the access for {account}\n{resp}"
+                                    )
+                                url_ = resp["accessUrl"]["url"]
+                                type = "none"
+                                if "storage.googleapis.com" in url_:
+                                    type = "gs"
+
+                                drs_object.access_methods = [
+                                    AccessMethod(access_url=url_, type=type)
+                                ]
+                                return drs_object
+                            except ClientResponseError as e:
+                                tries += 1
+                                self.token = self._get_auth_token()
+                                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
+                                if tries > 5:
+                                    if verbose:
+                                        # logger.error(f"value of text error  {str(text)}")
+                                        logger.error(f"A file has failed the signing process, specifically {str(e)}")
+                                        if "401" in str(e):
+                                            drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(e)}")
+
+                                    return None
 
                 except ClientConnectorError as e:
-                    # logger.info("URL Signing Failed, retrying")
-                    if tries > 4:
-                        logger.error(
-                            "File download failure. \
-    Run the exact command again to only download the missing file"
-                        )
-                        return DrsObject(
-                            self_uri=None,
-                            id=drs_object.id,
-                            checksums=[],
-                            size=0,
-                            name=None,
-                            errors=[str(e)],
-                        )
-                    else:
-                        tries += 1
+                    tries += 1
+                    self.token = await self._get_auth_token()
+                    time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
+                    if tries > 5:
+                        drs_object.errors.append(str(e))
+                        if verbose:
+                            logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
+                        return None
 
-    async def get_object(self, object_id: str) -> DrsObject:
+    async def get_object(self, object_id: str, verbose: bool) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
 
         Args:
@@ -182,37 +194,51 @@ class TerraDrsClient(DrsClient):
             while True:  # this is here for the somewhat more common Martha disconnects.
                 try:
                     async with session.post(url=self.endpoint, json=data, ssl=context) as response:
-                        try:
-                            self.statistics.set_max_files_open()
-                            response.raise_for_status()
-                            resp = await response.json(content_type=None)
+                        while True:
+                            try:
+                                self.statistics.set_max_files_open()
+                                if response.status > 399:
+                                    text = await response.content.read()
 
-                            md5_ = resp["hashes"]["md5"]
-                            size_ = resp["size"]
-                            name_ = resp["fileName"]
-                            return DrsObject(
-                                self_uri=object_id,
-                                size=size_,
-                                checksums=[Checksum(checksum=md5_, type="md5")],
-                                id=object_id,
-                                name=name_,
-                            )
-                        except ClientResponseError as e:
-                            return DrsObject(
-                                self_uri=object_id,
-                                id=object_id,
-                                checksums=[],
-                                size=0,
-                                name=None,
-                                errors=[str(e)],
-                            )
+                                response.raise_for_status()
+                                resp = await response.json(content_type=None)
+
+                                md5_ = resp["hashes"]["md5"]
+                                size_ = resp["size"]
+                                name_ = resp["fileName"]
+                                return DrsObject(
+                                    self_uri=object_id,
+                                    size=size_,
+                                    checksums=[Checksum(checksum=md5_, type="md5")],
+                                    id=object_id,
+                                    name=name_,
+                                )
+                            except ClientResponseError as e:
+                                tries += 1
+                                if verbose:
+                                    logger.info(f"Client Response Error: {str(e)} while fetching object information")
+                                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
+                                if tries > 3:
+                                    if verbose:
+                                        logger.error(f"retry failed in get_object function. \
+                                                     Exiting with error status: {str(e)}")
+                                    return DrsObject(
+                                        self_uri=object_id,
+                                        id=object_id,
+                                        checksums=[],
+                                        size=0,
+                                        name=None,
+                                        errors=[str(e)],
+                                    )
                 except ClientConnectorError as e:
-                    # logger.info("Martha Disconnect, retrying")
-                    if tries > 4:
-                        logger.error(
-                            "File download failure. \
-    Run the exact command again to only download the missing file"
-                        )
+                    tries += 1
+                    if verbose:
+                        logger.info(f"ClientConnectorError: {str(e)} while fetching object information")
+                    time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
+                    if tries > 3:
+                        if verbose:
+                            logger.error(f"value of text error {str(text)}")
+                            logger.error(f"retry failed in get_object function. Exiting with error status: {str(e)}")
                         return DrsObject(
                             self_uri=object_id,
                             id=object_id,
@@ -221,5 +247,3 @@ class TerraDrsClient(DrsClient):
                             name=None,
                             errors=[str(e)],
                         )
-                    else:
-                        tries += 1

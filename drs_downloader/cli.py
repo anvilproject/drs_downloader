@@ -30,12 +30,12 @@ def cli():
 
 @cli.command()
 @click.option(
-    "--silent",
-    "-s",
+    "--verbose",
+    "-v",
     is_flag=True,
     show_default=True,
     default=False,
-    help="Display nothing.",
+    help="Display every logger",
 )
 @click.option(
     "--destination-dir",
@@ -62,7 +62,7 @@ def cli():
     "Example: True",
 )
 def mock(
-    silent: bool,
+    verbose: bool,
     destination_dir: str,
     manifest_path: str,
     drs_column_name: str,
@@ -76,18 +76,18 @@ def mock(
 
     # perform downloads with a mock drs client
     _perform_downloads(
-        destination_dir, MockDrsClient(), ids_from_manifest, silent, duplicate=duplicate
+        destination_dir, MockDrsClient(), ids_from_manifest, verbose, duplicate=duplicate
     )
 
 
 @cli.command()
 @click.option(
-    "--silent",
-    "-s",
+    "--verbose",
+    "-v",
     is_flag=True,
     show_default=True,
     default=False,
-    help="Display nothing.",
+    help="Display every logger",
 )
 @click.option(
     "--destination-dir",
@@ -113,7 +113,7 @@ def mock(
     "Example: True",
 )
 def terra(
-    silent: bool,
+    verbose: bool,
     destination_dir: str,
     manifest_path: str,
     drs_column_name: str,
@@ -129,19 +129,19 @@ def terra(
         destination_dir,
         TerraDrsClient(),
         ids_from_manifest=ids_from_manifest,
-        silent=silent,
+        verbose=verbose,
         duplicate=duplicate,
     )
 
 
 @cli.command()
 @click.option(
-    "--silent",
-    "-s",
+    "--verbose",
+    "-v",
     is_flag=True,
     show_default=True,
     default=False,
-    help="Display nothing.",
+    help="Display every logger",
 )
 @click.option(
     "--destination-dir",
@@ -170,7 +170,7 @@ def terra(
     "Example: True",
 )
 def gen3(
-    silent: bool,
+    verbose: bool,
     destination_dir: str,
     manifest_path: str,
     drs_column_name: str,
@@ -186,7 +186,7 @@ def gen3(
         destination_dir,
         Gen3DrsClient(api_key_path=api_key_path, endpoint=endpoint),
         ids_from_manifest,
-        silent,
+        verbose,
         duplicate=duplicate,
     )
 
@@ -211,7 +211,7 @@ def pretty_size(bytes):
 
 
 def _perform_downloads(
-    destination_dir, drs_client, ids_from_manifest, silent, duplicate: bool
+    destination_dir, drs_client, ids_from_manifest, verbose: bool, duplicate: bool
 ):
     """Common helper method to run downloads."""
 
@@ -220,22 +220,20 @@ def _perform_downloads(
         destination_dir = Path(destination_dir)
         destination_dir.mkdir(parents=True, exist_ok=True)
 
-    if not silent:
-        logger.info(f"Downloading to: {destination_dir.resolve()}")
+    logger.info(f"Downloading to: {destination_dir.resolve()}")
 
     # create a manager
-    drs_manager = DrsAsyncManager(drs_client=drs_client, show_progress=not silent)
+    drs_manager = DrsAsyncManager(drs_client=drs_client, show_progress=not verbose)
 
     # call the server, get size, checksums etc.; sort them by size
-    drs_objects = drs_manager.get_objects(ids_from_manifest)
+    drs_objects = drs_manager.get_objects(ids_from_manifest, verbose=verbose)
     total_size_list = [total.size for total in drs_objects]
     total = pretty_size(sum(total_size_list))
-    if not silent:
-        logger.info(f"Total download size is {total}")
+    logger.info(f"Total download size is {total}")
 
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     # optimize based on workload
-    drs_objects = drs_manager.optimize_workload(silent, drs_objects)
+    drs_objects = drs_manager.optimize_workload(verbose, drs_objects)
     # determine the total number of batches
     total_batches = len(drs_objects) / DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
     if math.ceil(total_batches) - total_batches > 0:
@@ -250,34 +248,34 @@ def _perform_downloads(
         disable=(total_batches == 1),
     ):
 
-        drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate)
+        drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate, verbose=verbose)
 
     at_least_one_error = False
     oks = 0
     for drs_object in drs_objects:
         if len(drs_object.errors) == 0:
-            if not silent:
+            if not verbose:
                 logger.info(
                     (drs_object.name, "OK", drs_object.size, len(drs_object.file_parts))
                 )
             oks += 1
-    if not silent:
+
         logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
-        # logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
+        if verbose:
+            logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
 
     for drs_object in drs_objects:
         if len(drs_object.errors) > 0:
-            if not silent:
-                logger.error(
-                    (
-                        drs_object.name,
-                        "ERROR",
-                        drs_object.size,
-                        len(drs_object.file_parts),
-                        drs_object.errors,
-                    )
+            logger.error(
+                (
+                    drs_object.name,
+                    "ERROR",
+                    drs_object.size,
+                    len(drs_object.file_parts),
+                    drs_object.errors,
                 )
-            at_least_one_error = True
+            )
+        at_least_one_error = True
 
     if at_least_one_error:
         exit(1)
