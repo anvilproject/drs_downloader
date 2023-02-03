@@ -31,14 +31,14 @@ class TerraDrsClient(DrsClient):
         self.endpoint = (
             "https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3"
         )
-        self.token = self._get_auth_token()
+        self.token = None
 
     @dataclass
     class GcloudInfo(object):
         account: str
         project: str
 
-    def _get_auth_token(self) -> str:
+    async def _get_auth_token(self) -> str:
         """Get Google Cloud authentication token.
         User must run 'gcloud auth login' from the shell before starting this script.
 
@@ -55,7 +55,7 @@ class TerraDrsClient(DrsClient):
 
         assert token, "No token retrieved."
         logger.info("gcloud token successfully fetched")
-        return token
+        return creds
 
     async def download_part(
         self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool
@@ -106,9 +106,17 @@ class TerraDrsClient(DrsClient):
 
         assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
 
+        if (self.token is None or (self.token.expired and self.token.expiry is not None)):
+            if verbose:
+                logger.info("fetching new token")
+            self.token = await self._get_auth_token()
+
+        if verbose:
+            logger.info(f"status of token expiration {self.token.expiry}")
+
         data = {"url": drs_object.id, "fields": ["accessUrl"]}
         headers = {
-            "authorization": "Bearer " + self.token,
+            "authorization": "Bearer " + self.token.token,
             "content-type": "application/json",
         }
         tries = 0
@@ -182,9 +190,18 @@ class TerraDrsClient(DrsClient):
         Returns:
             DownloadURL: The downloadable bundle ready for async download
         """
+
+        if (self.token is None or (self.token.expired and self.token.expiry is not None)):
+            if verbose:
+                logger.info("fetching new token")
+            self.token = await self._get_auth_token()
+
+        if verbose:
+            logger.info(f"status of token expiration {self.token.expiry}")
+
         data = {"url": object_id, "fields": ["fileName", "size", "hashes"]}
         headers = {
-            "authorization": "Bearer " + self.token,
+            "authorization": "Bearer " + self.token.token,
             "content-type": "application/json",
         }
         tries = 0

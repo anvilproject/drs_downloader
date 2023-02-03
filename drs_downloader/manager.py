@@ -361,12 +361,6 @@ class DrsAsyncManager(DrsManager):
 
         drs_objects_with_signed_urls = [await f for f in asyncio.as_completed(tasks)]
 
-        # if "RECOVERABLE in AIOHTTP" not in any(obj.errors for obj in drs_objects):
-        # break
-
-        # for drs_object in drs_objects:
-        # drs_object.errors.clear()
-
         tasks = []
         for drs_object in drs_objects_with_signed_urls:
             if len(drs_object.errors) == 0:

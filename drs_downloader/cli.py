@@ -260,9 +260,9 @@ def _perform_downloads(
                 )
             oks += 1
 
-        logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
         if verbose:
             logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
+    logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
 
     for drs_object in drs_objects:
         if len(drs_object.errors) > 0:
