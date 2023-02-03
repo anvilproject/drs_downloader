@@ -47,10 +47,11 @@ To verify the integrity of the binaries on macOS run the following in the same d
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS.zip: OK
+drs-downloader-macOS: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
+
 </details>
 
 <details>
@@ -60,7 +61,7 @@ Alternatively if the commad outputs `FAILED` than the checksum did not match and
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS.zip: FAILED
+drs-downloader-macOS: FAILED
 shasum: WARNING: 1 computed checksum did NOT match
 shasum: checksums.txt: no file was verified
 ```
@@ -69,6 +70,7 @@ In such a case please reach out to the contributors for assistance.
 </details>
 
 ## Running the Executable
+
 For Linux to run the exe you will have to grant the file higher permissions. you can do this by running:
 
 ```sh
@@ -96,6 +98,7 @@ $ gcloud auth application-default login
 Your browser has been opened to visit:
 
     https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=...
+
 
 
 You are now logged in as [rosalind@ohsu.edu].
@@ -176,6 +179,7 @@ NA18613.final.cram.crai NA20525.final.cram.crai
 
 ### Example with a Different Header Value
 
+
 Let's take a look at different manifest file called [`terra-different-header.tsv`][terra-different-header]. Namely the DRS header value is now `drs_uri` so we will need to tell the downloader which column to find the DRS URI's in the manifest with the `--drs_header` flag:
 
 ```sh
@@ -185,6 +189,7 @@ drs_downloader terra -m tests/fixtures/manifests/terra-different-header.tsv -d D
 This will download the DRS Objects specified in the `drs_uri` column into the `DATA` directory just as before.
 
 [terra-different-header]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-different-header.tsv 
+
 
 ### Help/Additional Options
 
