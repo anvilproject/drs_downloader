@@ -5,6 +5,8 @@ from typing import Optional
 
 import aiofiles
 import aiohttp
+import certifi
+import ssl
 import logging
 import google.auth.transport.requests
 
@@ -61,9 +63,10 @@ class TerraDrsClient(DrsClient):
             try:
                 headers = {"Range": f"bytes={start}-{size}"}
                 file_name = destination_path / f"{drs_object.name}.{start}.{size}.part"
+                context = ssl.create_default_context(cafile=certifi.where())
                 async with aiohttp.ClientSession(headers=headers) as session:
                     async with session.get(
-                        drs_object.access_methods[0].access_url
+                        drs_object.access_methods[0].access_url, ssl=context
                     ) as request:
                         if request.status > 399:
                             text = await request.content.read()
@@ -103,12 +106,13 @@ class TerraDrsClient(DrsClient):
             "content-type": "application/json",
         }
         tries = 0
+        context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
             while (
                 True
             ):  # This is here so that URL signing errors are caught they are rare, but I did capture one
                 try:
-                    async with session.post(url=self.endpoint, json=data) as response:
+                    async with session.post(url=self.endpoint, json=data, ssl=context) as response:
                         try:
                             self.statistics.set_max_files_open()
                             response.raise_for_status()
@@ -172,10 +176,12 @@ class TerraDrsClient(DrsClient):
             "content-type": "application/json",
         }
         tries = 0
+
+        context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
             while True:  # this is here for the somewhat more common Martha disconnects.
                 try:
-                    async with session.post(url=self.endpoint, json=data) as response:
+                    async with session.post(url=self.endpoint, json=data, ssl=context) as response:
                         try:
                             self.statistics.set_max_files_open()
                             response.raise_for_status()
