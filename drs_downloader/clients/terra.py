@@ -58,7 +58,7 @@ class TerraDrsClient(DrsClient):
         return creds
 
     async def download_part(
-        self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool
+        self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool = False
     ) -> Optional[Path]:
         tries = 0
         while True:
@@ -178,7 +178,7 @@ class TerraDrsClient(DrsClient):
                             logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
                         return None
 
-    async def get_object(self, object_id: str, verbose: bool) -> DrsObject:
+    async def get_object(self, object_id: str, verbose: bool = False) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
 
         Args:

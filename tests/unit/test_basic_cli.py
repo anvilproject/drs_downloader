@@ -76,7 +76,7 @@ def test_mock_bad_id(caplog):
 
         # create a test manifest
         tsv_file = manifest_bad_id_for_download()
-        runner.invoke(cli, ["mock", "-d", dest, "--manifest-path", tsv_file.name])
+        runner.invoke(cli, ["mock", "-d", dest, "--manifest-path", tsv_file.name, "-v"])
         assert len([msg for msg in caplog.messages if 'ERROR' in msg]) > 0, caplog.records
         # leave test manifest in place if an error
         os.unlink(tsv_file.name)

@@ -275,7 +275,7 @@ def _perform_downloads(
                     drs_object.errors,
                 )
             )
-        at_least_one_error = True
+            at_least_one_error = True
 
     if at_least_one_error:
         exit(1)

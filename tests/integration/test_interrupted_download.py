@@ -147,6 +147,6 @@ def _get_drs_manager():
     # assign it to a manager
     drs_manager = DrsAsyncManager(drs_client=drs_client)
     ids_from_manifest = _extract_tsv_info(Path(tsv_path), drs_header)
-    drs_objects = drs_manager.get_objects(ids_from_manifest)
+    drs_objects = drs_manager.get_objects(ids_from_manifest,)
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     return drs_manager, drs_objects

@@ -25,7 +25,7 @@ BAD_SIGNATURE = "drs://" + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_SIGNATURE"))
 class MockDrsClient(DrsClient):
     """Simulate responses from server."""
 
-    async def sign_url(self, drs_object: DrsObject) -> Optional[DrsObject]:
+    async def sign_url(self, drs_object: DrsObject, verbose: bool = False) -> Optional[DrsObject]:
         """Simulate url signing by waiting 1-3 seconds, return populated DrsObject
 
         Args:
@@ -54,7 +54,7 @@ class MockDrsClient(DrsClient):
         return drs_object
 
     async def download_part(
-        self, drs_object: DrsObject, start: int, size: int, destination_path: Path
+        self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool = False
     ) -> Path:
         """Actually download a part.
 
@@ -97,7 +97,7 @@ class MockDrsClient(DrsClient):
 
         return Path(name)
 
-    async def get_object(self, object_id: str) -> DrsObject:
+    async def get_object(self, object_id: str, verbose: bool = False) -> DrsObject:
         """Fetch the object from repository DRS Service.
 
         See https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.0.0/docs/#_getobject.

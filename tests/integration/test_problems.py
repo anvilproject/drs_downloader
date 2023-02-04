@@ -134,6 +134,7 @@ def test_terra_uri_not_found(caplog):
                 dest,
                 "--manifest-path",
                 "tests/fixtures/bad_terra_uris.tsv",
+                "-v",
             ],
         )
         messages = caplog.messages
