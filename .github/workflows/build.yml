@@ -77,7 +77,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt pyinstaller
+          python -m venv venv
+          . venv/bin/activate
+          pip install -r requirements.txt -r requirements-dev.txt
           pyinstaller drs_downloader/cli.py --onefile --name drs_downloader
 
       - name: Prepare artifact for release (macOS and Ubuntu)
