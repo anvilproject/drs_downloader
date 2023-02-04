@@ -58,11 +58,10 @@ jobs:
       - name: Unit tests (No server dependencies) with pytest
         run: pytest tests/unit --cov=drs_downloader --cov-report term-missing
 
-#      - name: Unit and Integration tests with pytest
-#        run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
+     - name: Unit and Integration tests with pytest
+       run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
 
   build:
-    if: startsWith(github.ref, 'refs/tags/')
     needs: test
     runs-on: ${{ matrix.os }}
     strategy:
@@ -75,39 +74,51 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt pyinstaller
-          pyinstaller drs_downloader/cli.py --onefile --name drs_downloader
-
-      - name: Prepare artifact for release (macOS and Ubuntu)
+      - name: Create virtualenv (macOS and Linux)
         if: runner.os != 'Windows'
-        run: mv dist/drs_downloader drs-downloader-${{ runner.os }}
-
-      - name: Prepare artifact for release (Windows)
+        shell: bash
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          
+      - name: Create virtualenv (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: mv ./dist/drs_downloader.exe drs-downloader-${{ runner.os }} 
+        run: |
+          python -m venv venv
+          venv/Scripts/activate.bat
+      
+      - name: Install dependencies
+        shell: bash
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+          pyinstaller drs_downloader/cli.py --onefile --name drs-downloader-${{ runner.os }} 
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: drs-downloader-${{ runner.os }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+
+      - name: Create checksums
+        shell: bash
+        run: |
+          mkdir release
+          mv drs-downloader-*/* release
+          cd release
+          sha256sum * > checksums.txt
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: drs-downloader-${{ runner.os }}
-
-  checksums:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: robinraju/release-downloader@v1.6
-        with:
-          latest: true
-          fileName: "*"
-
-      - name: Create checksums
-        shell: bash
-        run: sha256sum drs-downloader-* > checksums.txt
-
-      - name: Upload checksums
-        uses: softprops/action-gh-release@v1
-        with:
-          files: checksums.txt
+          files: |
+            release/*
