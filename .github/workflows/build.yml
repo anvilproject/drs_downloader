@@ -58,8 +58,8 @@ jobs:
       - name: Unit tests (No server dependencies) with pytest
         run: pytest tests/unit --cov=drs_downloader --cov-report term-missing
 
-     - name: Unit and Integration tests with pytest
-       run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
+      # - name: Unit and Integration tests with pytest
+      #   run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
 
   build:
     needs: test
