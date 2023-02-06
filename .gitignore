@@ -134,10 +134,15 @@ site/
 # ignore pycharm
 .idea/
 
+tests/fixtures/*.json
+
 # ignore temp directory
 tmp/
 
 tests/fixtures/credentials.json
 tests/fixtures/weak_creds.json
 tests/fixtures/bad_credentials.json
+tests/fixtures/.DS_Store
+tests/.DS_Store
+
 

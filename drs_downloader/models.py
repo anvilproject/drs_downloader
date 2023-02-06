@@ -10,6 +10,7 @@ from typing import List, Dict, Optional
 @dataclass
 class AccessMethod(object):
     """See https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.0.0/docs/#_accessmethod"""
+
     access_url: str
     """An AccessURL that can be used to fetch the actual object bytes."""
     type: str
@@ -19,6 +20,7 @@ class AccessMethod(object):
 @dataclass
 class AccessURL(object):
     """See https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.0.0/docs/#_accessurl"""
+
     headers: Dict[str, str]
     """An optional list of headers to include in the HTTP request to url."""
     url: str
@@ -28,6 +30,7 @@ class AccessURL(object):
 @dataclass
 class Checksum(object):
     """See https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.0.0/docs/#_checksum"""
+
     checksum: str
     """The hex-string encoded checksum for the data."""
     type: str
@@ -37,6 +40,7 @@ class Checksum(object):
 @dataclass
 class DrsObject(object):
     """See https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.0.0/docs/#_drsobject"""
+
     id: str
     """An identifier unique to this DrsObject."""
     self_uri: str
@@ -58,6 +62,7 @@ class DrsObject(object):
 @dataclass
 class Statistics:
     """This is where we can share data between threads"""
+
     lock: threading.Lock = threading.Lock()
     max_files_open: int = 0
     pid: object = os.getpid()
@@ -69,29 +74,29 @@ class Statistics:
         """
         self.lock.acquire()
         system = platform.system()
-        if system == 'Darwin':
-            open_fd = len(set(os.listdir('/dev/fd/')))
-        elif system == 'Windows':
+        if system == "Darwin":
+            open_fd = len(set(os.listdir("/dev/fd/")))
+        elif system == "Windows":
             # TODO install psutils - len(Process.open_files())
             open_fd = 0
         else:
-            open_fd = len(set(os.listdir(f'/proc/{self.pid}/fd/')))
+            open_fd = len(set(os.listdir(f"/proc/{self.pid}/fd/")))
         if open_fd > self.max_files_open:
             self.max_files_open = open_fd
         self.lock.release()
 
 
 class DrsClient(ABC):
-    """Interact with DRS service.
-
-    """
+    """Interact with DRS service."""
 
     def __init__(self, statistics: Statistics = Statistics()):
         self.statistics = statistics
 
     @abstractmethod
-    async def download_part(self,
-                            drs_object: DrsObject, start: int, size: int, destination_path: Path) -> Optional[Path]:
+    async def download_part(
+        self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool = False
+    ) -> Optional[Path]:
+
         """Download and save part of a file to disk; on error, update drs_object.errors return None
 
         Args:
