@@ -300,7 +300,7 @@ class DrsAsyncManager(DrsManager):
             for f in tqdm.tqdm(
                 drs_object.file_parts,
                 total=len(drs_object.file_parts),
-                desc=f"       {drs_object.name} stitching",
+                desc=f"       {drs_object.name:50.50} stitching",
                 file=sys.stdout,
                 leave=False,
                 disable=self.disable,
@@ -423,7 +423,7 @@ class DrsAsyncManager(DrsManager):
         """
         return (seq[pos: pos + size] for pos in range(0, len(seq), size))
 
-    def get_objects(self, object_ids: List[str], verbose: bool = False) -> List[DrsObject]:
+    def get_objects(self, object_ids: List[str], verbose: bool) -> List[DrsObject]:
         """Create tasks for all object_ids, run them in batches, get information about the object.
 
         Args:
@@ -457,7 +457,7 @@ class DrsAsyncManager(DrsManager):
         return drs_objects
 
     def download(
-        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool = False
+        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool
     ) -> List[DrsObject]:
         """Split the drs_objects into manageable sizes, download the files.
 
@@ -567,7 +567,7 @@ class DrsAsyncManager(DrsManager):
         return drs_objects
 
     def filter_existing_files(
-        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool = False
+        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool
     ) -> List[DrsObject]:
         """Remove any DRS objects from a given list if they are already exist in the destination directory.
 
@@ -603,7 +603,7 @@ class DrsAsyncManager(DrsManager):
 
         return filtered_objects
 
-    def check_existing_parts(self, file_path: Path, start: int, size: int, verbose: bool = False) -> bool:
+    def check_existing_parts(self, file_path: Path, start: int, size: int, verbose: bool) -> bool:
         """Checks if any file parts have already been downloaded. If a file part was partially downloaded then it
            prompts a new download process for that part.
 

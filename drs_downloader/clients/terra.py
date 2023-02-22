@@ -84,12 +84,16 @@ class TerraDrsClient(DrsClient):
 
             except aiohttp.ClientResponseError as f:
                 tries += 1
+                if "The provided token has expired" in str(text):
+                    if verbose:
+                        logger.info(f"Error Text Body {str(text)}")
+                    drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
+                    return None
+
                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 3:
                     if verbose:
                         logger.info(f"Error Text Body {str(text)}")
-                    if "The provided token has expired" in str(text):
-                        drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
                         return None
 
             except Exception as e:
