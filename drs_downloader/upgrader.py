@@ -60,7 +60,7 @@ class Upgrader(ABC):
         elif system == "Linux":
             exe = "drs-downloader-Linux"
         elif system == "Windows":
-            exe = "drs-downloader-Windows"
+            exe = "drs-downloader-Windows.exe"
         else:
             raise Exception(
                 f"Unknown operating system detected. See the release page for manual upgrade: {self.release_url}"
