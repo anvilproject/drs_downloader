@@ -4,6 +4,7 @@ flake8
 pyinstaller
 pytest-cov
 mkdocs-section-index
+mkdocs-literate-nav
 mkdocs-gen-files
 mkdocs-material
 mkdocstrings[python]

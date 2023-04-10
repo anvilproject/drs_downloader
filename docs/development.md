@@ -7,10 +7,10 @@ $ git clone https://github.com/anvilproject/drs_downloader
 $ cd drs_downloader
 ```
 
-Then create and activate a virtual environment using `Python3.9`:
+Then create and activate a virtual environment using `Python3.10`:
 
 ```sh
-$ python3.9 -m venv venv
+$ python3.10 -m venv venv
 $ . venv/bin/activate
 $ pip install -r requirements.txt -r requirements-dev.txt
 ```
