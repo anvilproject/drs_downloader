@@ -50,7 +50,9 @@ class TerraDrsClient(DrsClient):
         """
 
         creds, projects = google.auth.default()
+
         creds.refresh(google.auth.transport.requests.Request())
+
         token = creds.token
 
         assert token, "No token retrieved."
@@ -84,18 +86,22 @@ class TerraDrsClient(DrsClient):
 
             except aiohttp.ClientResponseError as f:
                 tries += 1
-                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                if tries > 3:
+                if "The provided token has expired" in str(text):
                     if verbose:
                         logger.info(f"Error Text Body {str(text)}")
-                    if "The provided token has expired" in str(text):
-                        drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
+                    drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
+                    return None
+
+                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
+                if tries > 2:
+                    if verbose:
+                        logger.info(f"Error Text Body {str(text)}")
                         return None
 
             except Exception as e:
                 tries += 1
                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                if tries > 3:
+                if tries > 2:
                     if verbose:
                         logger.info(f"Miscellaneous Error {str(text)}")
                     drs_object.errors.append(f"NONRECOVERABLE ERROR {str(e)}")
@@ -132,8 +138,8 @@ class TerraDrsClient(DrsClient):
                                 self.statistics.set_max_files_open()
 
                                 # these lines produced an error saying that the content.read() had already closed
-                                # if response.status > 399:
-                                # text = await response.content.read()
+                                if response.status > 399:
+                                    text = await response.content.read()
 
                                 response.raise_for_status()
                                 resp = await response.json(content_type=None)
@@ -157,26 +163,42 @@ class TerraDrsClient(DrsClient):
                                 return drs_object
                             except ClientResponseError as e:
                                 tries += 1
-                                self.token = self._get_auth_token()
+                                if self.token.expired and self.token.expiry is not None:
+                                    self.token = await self._get_auth_token()
                                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                                if tries > 5:
+                                if tries > 2:
                                     if verbose:
-                                        # logger.error(f"value of text error  {str(text)}")
+                                        logger.error(f"value of text error  {str(text)}")
                                         logger.error(f"A file has failed the signing process, specifically {str(e)}")
                                         if "401" in str(e):
                                             drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(e)}")
 
-                                    return None
+                                    return DrsObject(
+                                        self_uri="",
+                                        id="",
+                                        checksums=[],
+                                        size=0,
+                                        name=None,
+                                        errors=[f"error: {str(text)}"],
+                                    )
 
                 except ClientConnectorError as e:
                     tries += 1
-                    self.token = await self._get_auth_token()
+                    if self.token.expired and self.token.expiry is not None:
+                        self.token = await self._get_auth_token()
                     time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                    if tries > 5:
+                    if tries > 2:
                         drs_object.errors.append(str(e))
                         if verbose:
                             logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
-                        return None
+                            return DrsObject(
+                                self_uri="",
+                                id="",
+                                checksums=[],
+                                size=0,
+                                name=None,
+                                errors=[f"error: {str(text)}"],
+                            )
 
     async def get_object(self, object_id: str, verbose: bool = False) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
@@ -219,7 +241,6 @@ class TerraDrsClient(DrsClient):
 
                                 response.raise_for_status()
                                 resp = await response.json(content_type=None)
-
                                 md5_ = resp["hashes"]["md5"]
                                 size_ = resp["size"]
                                 name_ = resp["fileName"]
@@ -233,9 +254,9 @@ class TerraDrsClient(DrsClient):
                             except ClientResponseError as e:
                                 tries += 1
                                 if verbose:
-                                    logger.info(f"Client Response Error: {str(e)} while fetching object information")
+                                    logger.info(f"Client Response Error {str(text)}")
                                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                                if tries > 3:
+                                if tries > 2:
                                     if verbose:
                                         logger.error(f"retry failed in get_object function. \
                                                      Exiting with error status: {str(e)}")
@@ -252,7 +273,7 @@ class TerraDrsClient(DrsClient):
                     if verbose:
                         logger.info(f"ClientConnectorError: {str(e)} while fetching object information")
                     time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                    if tries > 3:
+                    if tries > 2:
                         if verbose:
                             logger.error(f"value of text error {str(text)}")
                             logger.error(f"retry failed in get_object function. Exiting with error status: {str(e)}")

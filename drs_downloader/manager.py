@@ -160,6 +160,32 @@ class DrsAsyncManager(DrsManager):
             # start += part_size
         yield start, size
 
+    async def wait_till_completed(self, tasks, err_function_msg):
+        drs_objects_with_signed_urls = []
+        while tasks:
+            done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+            for t in tqdm.tqdm(done, total=len(tasks),
+                               desc=f"retrieving {err_function_msg} information",
+                               disable=self.disable):
+                try:
+                    y = await t
+                    drs_objects_with_signed_urls.append(y)
+
+                except Exception:
+                    signed_url = DrsObject(
+                                    self_uri="",
+                                    id="",
+                                    checksums=[],
+                                    size=0,
+                                    name=None,
+                                    errors=[f"Exception in {err_function_msg} function"],
+                                )
+
+                    drs_objects_with_signed_urls.append(signed_url)
+                    t.cancel()
+
+        return drs_objects_with_signed_urls
+
     async def _run_download_parts(
         self, drs_object: DrsObject, destination_path: Path, verbose: bool
     ) -> DrsObject:
@@ -227,7 +253,8 @@ class DrsAsyncManager(DrsManager):
                 )
                 chunk_tasks.append(task)
 
-            chunk_paths = [await f for f in asyncio.as_completed(chunk_tasks)]
+            chunk_paths = await self.wait_till_completed(chunk_tasks, "download_parts")
+
             """
             Uncessesary logging message for the end user. When you take into account
             that most downloads are going to take longer than 15 minutes and this message
@@ -300,7 +327,7 @@ class DrsAsyncManager(DrsManager):
             for f in tqdm.tqdm(
                 drs_object.file_parts,
                 total=len(drs_object.file_parts),
-                desc=f"       {drs_object.name} stitching",
+                desc=f"       {drs_object.name:50.50} stitching",
                 file=sys.stdout,
                 leave=False,
                 disable=self.disable,
@@ -356,10 +383,11 @@ class DrsAsyncManager(DrsManager):
         # first sign the urls
         tasks = []
         for drs_object in drs_objects:
-            task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object, verbose=verbose))
-            tasks.append(task)
+            if len(drs_object.errors) == 0:
+                task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object, verbose=verbose))
+                tasks.append(task)
 
-        drs_objects_with_signed_urls = [await f for f in asyncio.as_completed(tasks)]
+        drs_objects_with_signed_urls = await self.wait_till_completed(tasks, "sign_url")
 
         tasks = []
         for drs_object in drs_objects_with_signed_urls:
@@ -370,12 +398,13 @@ class DrsAsyncManager(DrsManager):
                     )
                 )
                 tasks.append(task)
+
             else:
                 logger.error(
                     f"{drs_object.id} has error {drs_object.errors}, not attempting anything further"
                 )
 
-        drs_objects_with_file_parts = [await f for f in asyncio.as_completed(tasks)]
+        drs_objects_with_file_parts = await self.wait_till_completed(tasks, "run_download_parts")
 
         return drs_objects_with_file_parts
 
@@ -397,18 +426,11 @@ class DrsAsyncManager(DrsManager):
             task = asyncio.create_task(self._drs_client.get_object(object_id=object_id, verbose=verbose))
             tasks.append(task)
 
-        signed_urls = [
-            await f
-            for f in tqdm.tqdm(
-                asyncio.as_completed(tasks),
-                total=len(tasks),
-                leave=leave,
-                desc="retrieving object information",
-                disable=self.disable,
-            )
-        ]
+        object_information = []
 
-        return signed_urls
+        object_information = await self.wait_till_completed(tasks, "get_object")
+
+        return object_information
 
     @classmethod
     def chunker(cls, seq: Collection, size: int) -> Iterator:
@@ -423,7 +445,7 @@ class DrsAsyncManager(DrsManager):
         """
         return (seq[pos: pos + size] for pos in range(0, len(seq), size))
 
-    def get_objects(self, object_ids: List[str], verbose: bool = False) -> List[DrsObject]:
+    def get_objects(self, object_ids: List[str], verbose: bool) -> List[DrsObject]:
         """Create tasks for all object_ids, run them in batches, get information about the object.
 
         Args:
@@ -457,7 +479,7 @@ class DrsAsyncManager(DrsManager):
         return drs_objects
 
     def download(
-        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool = False
+        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool
     ) -> List[DrsObject]:
         """Split the drs_objects into manageable sizes, download the files.
 
@@ -567,7 +589,7 @@ class DrsAsyncManager(DrsManager):
         return drs_objects
 
     def filter_existing_files(
-        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool = False
+        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool
     ) -> List[DrsObject]:
         """Remove any DRS objects from a given list if they are already exist in the destination directory.
 
@@ -603,7 +625,7 @@ class DrsAsyncManager(DrsManager):
 
         return filtered_objects
 
-    def check_existing_parts(self, file_path: Path, start: int, size: int, verbose: bool = False) -> bool:
+    def check_existing_parts(self, file_path: Path, start: int, size: int, verbose: bool) -> bool:
         """Checks if any file parts have already been downloaded. If a file part was partially downloaded then it
            prompts a new download process for that part.
 

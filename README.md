@@ -24,7 +24,7 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 | Operating System | DRS Downloader                        | Checksum                   |
 | ---------------- | ------------------------------------- | -------------------------- |
-| MacOS            | [drs-downloader-macOS][macos]         | [checksums.txt][checksums] |
+| macOS            | [drs-downloader-macOS][macos]         | [checksums.txt][checksums] |
 | Linux            | [drs-downloader-Linux][linux]         | [checksums.txt][checksums] |
 | Windows          | [drs-downloader-Windows.exe][windows] | [checksums.txt][checksums] |
 
@@ -32,6 +32,25 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 [linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux
 [windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows.exe
 [checksums]: https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt
+
+Download the latest `drs_downloader` zip file for your operating system. Unzipping the downloaded file will provide a `drs_downloader` executable file that can be run directly.
+
+<details>
+<summary>Supported OS Versions</summary>
+
+| Operating System | Supported Versions             |
+| ---------------- | ------------------------------ |
+| macOS            | 12 (Monterey), 13 (Ventura)    |
+| Linux            | Ubuntu 22.04 (Jammy Jellyfish) |
+| Windows          | Windows 11                     |
+
+_Notes_:
+
+- Testing was done on hardware running macOS Monterey and Ventura (Apple Silicon M1 chips), with Windows and Linux emulation through [UTM](https://mac.getutm.app/).
+- Due to hardware limitations with the ARM M1 chips, Windows 10 was not included in the list of tested operated systems as Microsoft does not currently provide a public Windows 10 ARM build.
+- Ubuntu 20.04 (Focal Fossa) uses version 2.31 of the GNU C Library which appears to be incompatible with Python 3.10 requirement of version 2.35.
+
+</details>
 
 ### Checksum Verification
 

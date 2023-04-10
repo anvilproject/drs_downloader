@@ -8,6 +8,7 @@ import click
 import os
 import csv
 import sys
+from sys import exit
 
 from drs_downloader.clients.gen3 import Gen3DrsClient
 from drs_downloader.clients.mock import MockDrsClient
@@ -194,6 +195,7 @@ def gen3(
 # CREDIT https://stackoverflow.com/questions/5194057/better-way-to-convert-file-sizes-in-python
 def pretty_size(bytes):
     """Integer -> human readable Data Size Pretty Printer"""
+    assert (bytes and bytes > 0), f"ERROR, The total download size {bytes} is Zero or None"
     units = [
         (1 << 50, " PB"),
         (1 << 40, " TB"),
@@ -202,12 +204,16 @@ def pretty_size(bytes):
         (1 << 10, " KB"),
         (1, (" bytes")),
     ]
+    if (bytes/1000000000 < 1):
+        price = 0.1
+    else:
+        price = '%.2f' % ((bytes/1000000000) * 0.1)
 
     for factor, suffix in units:
         if bytes >= factor:
             break
     amount = int(bytes / factor)
-    return str(amount) + suffix
+    return str(amount) + suffix, price
 
 
 def _perform_downloads(
@@ -228,8 +234,12 @@ def _perform_downloads(
     # call the server, get size, checksums etc.; sort them by size
     drs_objects = drs_manager.get_objects(ids_from_manifest, verbose=verbose)
     total_size_list = [total.size for total in drs_objects]
-    total = pretty_size(sum(total_size_list))
+    assert (sum(total_size_list) > 0), (logger.error("FATAL ERROR: No size data was returned from get_objects.\
+ Check your uris to make sure that they are properly formatted"), exit())
+
+    total, price = pretty_size(sum(total_size_list))
     logger.info(f"Total download size is {total}")
+    logger.info(f"Estimated download cost is ${price}")
 
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     # optimize based on workload

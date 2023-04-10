@@ -74,14 +74,17 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Create virtualenv (macOS and Linux)
-        if: runner.os != 'Windows'
+      - name: Install dependencies
         shell: bash
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          
-      - name: Create virtualenv (Windows)
+          pip install -r requirements.txt -r requirements-dev.txt
+          pyinstaller drs_downloader/cli.py --onefile --name drs_downloader
+
+      - name: Prepare artifact for release (macOS and Ubuntu)
+        if: runner.os != 'Windows'
+        run: mv ./dist/drs_downloader drs-downloader-${{ runner.os }}
+
+      - name: Prepare artifact for release (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
