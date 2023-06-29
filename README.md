@@ -24,11 +24,11 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 | Operating System | DRS Downloader                        | Checksum                   |
 | ---------------- | ------------------------------------- | -------------------------- |
-| macOS            | [drs-downloader-macOS.pkg][macos]     | [checksums.txt][checksums] |
+| macOS            | [drs-downloader-macOS][macos]         | [checksums.txt][checksums] |
 | Linux            | [drs-downloader-Linux][linux]         | [checksums.txt][checksums] |
 | Windows          | [drs-downloader-Windows.exe][windows] | [checksums.txt][checksums] |
 
-[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS.pkg
+[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS
 [linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux
 [windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows.exe
 [checksums]: https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt
@@ -63,7 +63,7 @@ To verify the integrity of the binaries on macOS run the following command in th
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS.pkg: OK
+drs-downloader-macOS: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
@@ -77,7 +77,7 @@ Alternatively if the commad outputs `FAILED` than the checksum did not match and
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS.pkg: FAILED
+drs-downloader-macOS: FAILED
 shasum: WARNING: 1 computed checksum did NOT match
 shasum: checksums.txt: no file was verified
 ```
