@@ -63,7 +63,7 @@ To verify the integrity of the binaries on macOS run the following command in th
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS: OK
+drs-downloader-macOS.pkg: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
@@ -77,7 +77,7 @@ Alternatively if the commad outputs `FAILED` than the checksum did not match and
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS: FAILED
+drs-downloader-macOS.pkg: FAILED
 shasum: WARNING: 1 computed checksum did NOT match
 shasum: checksums.txt: no file was verified
 ```
