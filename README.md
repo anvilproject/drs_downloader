@@ -24,11 +24,11 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 | Operating System | DRS Downloader                        | Checksum                   |
 | ---------------- | ------------------------------------- | -------------------------- |
-| macOS            | [drs-downloader-macOS][macos]         | [checksums.txt][checksums] |
+| macOS            | [drs-downloader-macOS.pkg][macos]     | [checksums.txt][checksums] |
 | Linux            | [drs-downloader-Linux][linux]         | [checksums.txt][checksums] |
 | Windows          | [drs-downloader-Windows.exe][windows] | [checksums.txt][checksums] |
 
-[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS
+[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS.pkg
 [linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux
 [windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows.exe
 [checksums]: https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt
