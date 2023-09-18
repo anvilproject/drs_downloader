@@ -71,8 +71,7 @@ class Gen3DrsClient(DrsClient):
         return response.status
 
     async def download_part(
-        self, drs_object: DrsObject, start: int, size: int, destination_path: Path
-    ) -> Optional[Path]:
+         self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool) -> Optional[Path]:
         try:
 
             if not self.authorized:
@@ -98,7 +97,7 @@ class Gen3DrsClient(DrsClient):
             drs_object.errors.append(str(e))
             return None
 
-    async def sign_url(self, drs_object: DrsObject) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject, verbose: bool) -> DrsObject:
         """Call fence's /user/data/download/ endpoint."""
 
         headers = {
@@ -124,7 +123,7 @@ class Gen3DrsClient(DrsClient):
                     drs_object.errors.append(str(e))
                     return drs_object
 
-    async def get_object(self, object_id: str) -> DrsObject:
+    async def get_object(self, object_id: str, verbose: bool) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
 
         Args:

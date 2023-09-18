@@ -77,7 +77,7 @@ def mock(
 
     # perform downloads with a mock drs client
     _perform_downloads(
-        destination_dir, MockDrsClient(), ids_from_manifest, verbose, duplicate=duplicate
+        destination_dir, MockDrsClient(), ids_from_manifest, verbose, duplicate=duplicate,
     )
 
 
@@ -105,6 +105,13 @@ def mock(
     "Example: pfb:ga4gh_drs_uri",
 )
 @click.option(
+    "--user-project", "-u",
+    default=None,
+    show_default=True,
+    help="This option is used to specify the Terra Workspace \
+          Google project id if the requester is paying for the download",
+)
+@click.option(
     "--duplicate",
     default=False,
     is_flag=True,
@@ -113,25 +120,40 @@ def mock(
     or not to download the file again if it already exists in the directory"
     "Example: True",
 )
+@click.option(
+    "--string-mode",
+    default=None,
+    show_default=True,
+    help="This option is used when you want to run the downloader with URIS\
+          that you provide in string form with uris seperated by commas the command line. ex: 'uri1, uri2, uri3'",
+)
 def terra(
     verbose: bool,
     destination_dir: str,
     manifest_path: str,
     drs_column_name: str,
+    user_project: str,
     duplicate: bool,
+    string_mode: str,
 ):
     """Copy files from terra.bio"""
 
     # get ids from manifest
-    ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
+    if string_mode is not None:
+        ids_from_manifest = string_mode.split(",")
+        ids_from_manifest = [s.replace(" ", "") for s in ids_from_manifest]
+    else:
+        ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
     # perform downloads with a terra drs client
     _perform_downloads(
         destination_dir,
         TerraDrsClient(),
         ids_from_manifest=ids_from_manifest,
+        user_project=user_project,
         verbose=verbose,
         duplicate=duplicate,
+
     )
 
 
@@ -217,7 +239,7 @@ def pretty_size(bytes):
 
 
 def _perform_downloads(
-    destination_dir, drs_client, ids_from_manifest, verbose: bool, duplicate: bool
+    destination_dir, drs_client, ids_from_manifest, user_project: str, verbose: bool, duplicate: bool
 ):
     """Common helper method to run downloads."""
 
@@ -258,7 +280,7 @@ def _perform_downloads(
         disable=(total_batches == 1),
     ):
 
-        drs_manager.download(chunk_of_drs_objects, destination_dir, duplicate=duplicate, verbose=verbose)
+        drs_manager.download(chunk_of_drs_objects, destination_dir, user_project=user_project, duplicate=duplicate, verbose=verbose)
 
     at_least_one_error = False
     oks = 0

@@ -369,7 +369,7 @@ class DrsAsyncManager(DrsManager):
         return drs_object
 
     async def _run_download(
-        self, drs_objects: List[DrsObject], destination_path: Path, verbose: bool
+        self, drs_objects: List[DrsObject], destination_path: Path, user_project:str, verbose: bool
     ) -> List[DrsObject]:
         """
         Create tasks to sign and download, display progress.
@@ -384,7 +384,8 @@ class DrsAsyncManager(DrsManager):
         tasks = []
         for drs_object in drs_objects:
             if len(drs_object.errors) == 0:
-                task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object, verbose=verbose))
+                task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object,
+                                           user_project=user_project, verbose=verbose))
                 tasks.append(task)
 
         drs_objects_with_signed_urls = await self.wait_till_completed(tasks, "sign_url")
@@ -479,7 +480,7 @@ class DrsAsyncManager(DrsManager):
         return drs_objects
 
     def download(
-        self, drs_objects: List[DrsObject], destination_path: Path, duplicate: bool, verbose: bool
+        self, drs_objects: List[DrsObject], destination_path: Path, user_project: str, duplicate: bool, verbose: bool
     ) -> List[DrsObject]:
         """Split the drs_objects into manageable sizes, download the files.
 
@@ -519,7 +520,8 @@ class DrsAsyncManager(DrsManager):
                 completed_chunk = asyncio.run(
                     self._run_download(
                         drs_objects=chunk_of_drs_objects,
-                        destination_path=destination_path, verbose=verbose
+                        destination_path=destination_path,
+                        user_project=user_project, verbose=verbose
                     )
                 )
                 current += 1

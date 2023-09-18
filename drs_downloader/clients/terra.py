@@ -29,7 +29,7 @@ class TerraDrsClient(DrsClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.endpoint = (
-            "https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3"
+            "https://drshub.dsde-prod.broadinstitute.org/api/v4/drs/resolve"
         )
         self.token = None
 
@@ -107,7 +107,7 @@ class TerraDrsClient(DrsClient):
                     drs_object.errors.append(f"NONRECOVERABLE ERROR {str(e)}")
                     return None
 
-    async def sign_url(self, drs_object: DrsObject, verbose: bool) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject, user_project: str, verbose: bool) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object`"""
 
         assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
@@ -125,6 +125,12 @@ class TerraDrsClient(DrsClient):
             "authorization": "Bearer " + self.token.token,
             "content-type": "application/json",
         }
+        if user_project is not None and user_project.startswith("terra-") and len(user_project) == 14:
+            headers["x-user-project"] = user_project
+            vld_and_pop_prjct = True
+        else:
+            vld_and_pop_prjct = False
+
         tries = 0
         context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
@@ -155,7 +161,36 @@ class TerraDrsClient(DrsClient):
                                 url_ = resp["accessUrl"]["url"]
                                 type = "none"
                                 if "storage.googleapis.com" in url_:
+                                    if verbose:
+                                        print(f"SIGNED URL: {url_}")
+
                                     type = "gs"
+                                    if "X-Goog-Credential" in url_:
+                                        goog_credential = url_.split("X-Goog-Credential=")[1]
+                                        if vld_and_pop_prjct and not goog_credential.startswith("pet-"):
+                                            return DrsObject(
+                                                self_uri="",
+                                                id="",
+                                                checksums=[],
+                                                size=0,
+                                                name=None,
+                                                errors=[f"error: requestor pays user project is specified but \
+                                                        the signed URL Google Credential contains \
+                                                        unexpected value: {goog_credential}"],
+                                            )
+                                        elif not vld_and_pop_prjct and not goog_credential.startswith("tdr-ingest-"):
+                                            return DrsObject(
+                                                self_uri="",
+                                                id="",
+                                                checksums=[],
+                                                size=0,
+                                                name=None,
+                                                errors=[f"error: provider pays is specified but \
+                                                        the signed URL Google Credential contains \
+                                                        unexpected value: {goog_credential}"],
+                                            )
+
+
 
                                 drs_object.access_methods = [
                                     AccessMethod(access_url=url_, type=type)
@@ -224,10 +259,10 @@ class TerraDrsClient(DrsClient):
         data = {"url": object_id, "fields": ["fileName", "size", "hashes"]}
         headers = {
             "authorization": "Bearer " + self.token.token,
-            "content-type": "application/json",
+            "content-type": "application/json"
         }
-        tries = 0
 
+        tries = 0
         context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
             while True:  # this is here for the somewhat more common Martha disconnects.
