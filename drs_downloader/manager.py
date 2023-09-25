@@ -643,17 +643,18 @@ class DrsAsyncManager(DrsManager):
         if file_path.exists():
             expected_size = size - start + 1
             if verbose:
-                logger.info(f"EXPTECTED PART SIZE SIZE {expected_size}")
+                logger.info(f"EXPTECTED PART SIZE {expected_size}")
 
             actual_size = file_path.stat().st_size
-            sizes_match = actual_size == expected_size
-            if verbose:
-                logger.info(f"ACTUAL SIZE {actual_size}")
+            sizes_match = (actual_size == expected_size)
 
             if sizes_match is True:
                 # this logger message is really redundant when you are downloading large files.
                 # For the purposes of cleaning up the UI on expired signed URLS going to comment this out for now
                 # logger.info(f"{file_path.name} exists and has expected size. Skipping download.")
                 return True
+
+            if verbose:
+                logger.info(f"ACTUAL SIZE {actual_size} DOES NOT MATCH {expected_size}")
 
         return False

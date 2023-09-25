@@ -138,7 +138,7 @@ def test_terra_uri_not_found(caplog):
             ],
         )
         messages = caplog.messages
-        assert any(["Not Found" in message for message in messages])
+        assert any(["NOT FOUND" in message for message in messages])
 
 
 """

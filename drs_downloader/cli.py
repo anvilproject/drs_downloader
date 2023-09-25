@@ -77,7 +77,7 @@ def mock(
 
     # perform downloads with a mock drs client
     _perform_downloads(
-        destination_dir, MockDrsClient(), ids_from_manifest, verbose, duplicate=duplicate,
+        destination_dir, MockDrsClient(), ids_from_manifest, user_project=None, verbose=verbose, duplicate=duplicate,
     )
 
 
@@ -209,8 +209,9 @@ def gen3(
         destination_dir,
         Gen3DrsClient(api_key_path=api_key_path, endpoint=endpoint),
         ids_from_manifest,
-        verbose,
+        verbose=verbose,
         duplicate=duplicate,
+        user_project=None
     )
 
 
