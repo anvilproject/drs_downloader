@@ -280,7 +280,8 @@ def _perform_downloads(
         disable=(total_batches == 1),
     ):
 
-        drs_manager.download(chunk_of_drs_objects, destination_dir, user_project=user_project, duplicate=duplicate, verbose=verbose)
+        drs_manager.download(chunk_of_drs_objects, destination_dir, user_project=user_project,
+                             duplicate=duplicate, verbose=verbose)
 
     at_least_one_error = False
     oks = 0

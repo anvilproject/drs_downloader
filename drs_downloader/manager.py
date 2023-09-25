@@ -369,7 +369,7 @@ class DrsAsyncManager(DrsManager):
         return drs_object
 
     async def _run_download(
-        self, drs_objects: List[DrsObject], destination_path: Path, user_project:str, verbose: bool
+        self, drs_objects: List[DrsObject], destination_path: Path, user_project: str, verbose: bool
     ) -> List[DrsObject]:
         """
         Create tasks to sign and download, display progress.

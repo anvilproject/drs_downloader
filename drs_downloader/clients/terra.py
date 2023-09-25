@@ -190,8 +190,6 @@ class TerraDrsClient(DrsClient):
                                                         unexpected value: {goog_credential}"],
                                             )
 
-
-
                                 drs_object.access_methods = [
                                     AccessMethod(access_url=url_, type=type)
                                 ]
