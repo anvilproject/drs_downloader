@@ -8,14 +8,11 @@ $ cd drs_downloader
 ```
 
 Then create and activate a virtual environment using `Python3.10`:
-If installing 3.8.5 aiohttp make sure to run the below command to avoid the Security issue
-https://security.snyk.io/vuln/SNYK-PYTHON-AIOHTTP-5798483
 
 ```sh
 $ python3.10 -m venv venv
 $ . venv/bin/activate
 $ pip install -r requirements.txt -r requirements-dev.txt
-$ AIOHTTP_NO_EXTENSIONS=1 python -m pip install --no-binary=aiohttp --no-cache aiohttp 
 ```
 
 ## Terra Authentication

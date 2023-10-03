@@ -109,27 +109,43 @@ class TerraDrsClient(DrsClient):
 
     async def sign_url(self, drs_object: DrsObject, user_project: str, verbose: bool) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object`"""
-
         assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
 
         if (self.token is None or (self.token.expired and self.token.expiry is not None)):
             if verbose:
                 logger.info("fetching new token")
             self.token = await self._get_auth_token()
-
         if verbose:
             logger.info(f"status of token expiration {self.token.expiry}")
 
         data = {"url": drs_object.id, "fields": ["accessUrl"]}
+
         headers = {
             "authorization": "Bearer " + self.token.token,
             "content-type": "application/json",
         }
-        if user_project is not None and user_project.startswith("terra-") and len(user_project) == 14:
-            headers["x-user-project"] = user_project
-            vld_and_pop_prjct = True
+        # if the uri is a AnVIL DRS uri then check if the google project format is correct
+        if drs_object.self_uri.startswith("drs://dg.ANV0:dg.ANV0") or \
+           drs_object.self_uri.startswith("drs://drs.anv0:v2_"):
+            # if the Google project format is correct set the vld_prjct to True
+            # indicating that a valid AnVIL drs uri was given with a google project id that is in the right format
+            if user_project is not None and user_project.startswith("terra-") and len(user_project) == 14:
+                headers["x-user-project"] = user_project
+                vld_uri = "vld_uri_and_prjct"
+            # Would be nice to have a google project validator here
+            elif user_project is None or not user_project.startswith("terra-") or len(user_project) != 14:
+                # Since this would mean a user isn't providing a project id to an AnVIL uri,
+                # or the project id potentially could be invalid stop the downloader before it signs the URI
+                return DrsObject(
+                            self_uri="",
+                            id="",
+                            checksums=[],
+                            size=0,
+                            name=None,
+                            errors=[f"A requestor pays AnVIL DRS URI: {drs_object.self_uri}\
+is specified but not Google project id is given."])
         else:
-            vld_and_pop_prjct = False
+            vld_uri = "AnVIL_uri_not_used"
 
         tries = 0
         context = ssl.create_default_context(cafile=certifi.where())
@@ -167,29 +183,38 @@ class TerraDrsClient(DrsClient):
                                     type = "gs"
                                     if "X-Goog-Credential" in url_:
                                         goog_credential = url_.split("X-Goog-Credential=")[1]
-                                        if vld_and_pop_prjct and not goog_credential.startswith("pet-"):
+                                        # If a valid Google project and valid AnVIL DRS uri is used but
+                                        # the signed url does not include the requestor pays pet character
+                                        # add an error to the Drs object so that it does not continue
+                                        # the downloading process
+                                        # since AnVIL DRS uris must be using requestor pays methods
+                                        if vld_uri == "vld_uri_and_prjct" and not goog_credential.startswith("pet-"):
                                             return DrsObject(
                                                 self_uri="",
                                                 id="",
                                                 checksums=[],
                                                 size=0,
                                                 name=None,
-                                                errors=[f"error: requestor pays user project is specified but \
-                                                        the signed URL Google Credential contains \
-                                                        unexpected value: {goog_credential}"],
-                                            )
-                                        elif not vld_and_pop_prjct and not goog_credential.startswith("tdr-ingest-"):
-                                            return DrsObject(
-                                                self_uri="",
-                                                id="",
-                                                checksums=[],
-                                                size=0,
-                                                name=None,
-                                                errors=[f"error: provider pays is specified but \
-                                                        the signed URL Google Credential contains \
+                                                errors=[f"Rrequestor pays user project is specified but \
+                                                        the signed URL Google credential contains \
                                                         unexpected value: {goog_credential}"],
                                             )
 
+                                        # If a valid google project is not specified and uris are not checked but
+                                        # the signed url does not include the tdr-ingest then attach an error to
+                                        # the object since provider pays is not being used for non-AnVIL uris.
+                                        elif vld_uri == "AnVIL_uri_not_used" \
+                                                and not goog_credential.startswith("tdr-ingest-"):
+                                            return DrsObject(
+                                                self_uri="",
+                                                id="",
+                                                checksums=[],
+                                                size=0,
+                                                name=None,
+                                                errors=[f"Provider pays is specified but \
+                                                        the signed URL Google credential contains \
+                                                        unexpected value: {goog_credential}"],
+                                            )
                                 drs_object.access_methods = [
                                     AccessMethod(access_url=url_, type=type)
                                 ]
@@ -258,6 +283,7 @@ class TerraDrsClient(DrsClient):
         headers = {
             "authorization": "Bearer " + self.token.token,
             "content-type": "application/json"
+            ""
         }
 
         tries = 0
