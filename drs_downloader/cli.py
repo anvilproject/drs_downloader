@@ -349,6 +349,9 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
         # add url to urls list
         if header is not None:
             for row in tsv_file:
+                # solves an issue where blank lines would be read from the TSV
+                if row[uri_index] == '':
+                    continue
                 uris.append(row[uri_index])
 
         else:
