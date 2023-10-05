@@ -82,7 +82,7 @@ class TerraDrsClient(DrsClient):
                                 if len(drs_object.errors) == 0:
                                     drs_object.errors.append("User project specified in --user-project \
 option is invalid")
-                                return None
+                                return drs_object
 
                         request.raise_for_status()
 
@@ -146,14 +146,9 @@ option is invalid")
             elif user_project is None or not user_project.startswith("terra-") or len(user_project) != 14:
                 # Since this would mean a user isn't providing a project id to an AnVIL uri,
                 # or the project id potentially could be invalid stop the downloader before it signs the URI
-                return DrsObject(
-                            self_uri="",
-                            id="",
-                            checksums=[],
-                            size=0,
-                            name=None,
-                            errors=[f"A requestor pays AnVIL DRS URI: {drs_object.self_uri} \
-is specified but not Google project id is given."])
+                drs_object.errors.append(f"A requestor pays AnVIL DRS URI: {drs_object.self_uri} \
+is specified but no Google project id is given.")
+                return drs_object
 
         tries = 0
         context = ssl.create_default_context(cafile=certifi.where())
@@ -197,15 +192,10 @@ is specified but not Google project id is given."])
                                         # the downloading process
                                         # since AnVIL DRS uris must be using requestor pays methods
                                         if vld_uri and not goog_credential.startswith("pet-"):
-                                            return DrsObject(
-                                                self_uri="",
-                                                id="",
-                                                checksums=[],
-                                                size=0,
-                                                name=None,
-                                                errors=[f"Requestor pays user project is specified but \
-the signed URL Google credential contains unexpected value: {goog_credential}"],
-                                            )
+                                            drs_object.errors.append(f"Requestor pays user project is specified but \
+the signed URL Google credential contains unexpected value: {goog_credential}")
+                                            return drs_object
+
                                 drs_object.access_methods = [
                                     AccessMethod(access_url=url_, type=type)
                                 ]
