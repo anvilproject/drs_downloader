@@ -22,15 +22,15 @@ A file download tool for AnVIL/TDR data identified by DRS URIs
 
 ## Installation
 
-| Operating System | DRS Downloader                        | Checksum                   |
-| ---------------- | ------------------------------------- | -------------------------- |
-| macOS            | [drs-downloader-macOS][macos]         | [checksums.txt][checksums] |
-| Linux            | [drs-downloader-Linux][linux]         | [checksums.txt][checksums] |
-| Windows          | [drs-downloader-Windows.exe][windows] | [checksums.txt][checksums] |
+| Operating System | DRS Downloader                | Checksum                   |
+| ---------------- | ----------------------------- | -------------------------- |
+| macOS            | [drs_downloader.pkg][macos]   | [checksums.txt][checksums] |
+| Linux            | [drs_downloader][linux]       | [checksums.txt][checksums] |
+| Windows          | [drs_downloader.exe][windows] | [checksums.txt][checksums] |
 
-[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-macOS
-[linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Linux
-[windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs-downloader-Windows.exe
+[macos]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs_downloader.pkg
+[linux]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs_downloader
+[windows]: https://github.com/anvilproject/drs_downloader/releases/latest/download/drs_downloader.exe
 [checksums]: https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt
 
 Download the latest `drs_downloader` zip file for your operating system. Unzipping the downloaded file will provide a `drs_downloader` executable file that can be run directly.
@@ -63,7 +63,7 @@ To verify the integrity of the binaries on macOS run the following command in th
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS: OK
+drs_downloader.pkg: OK
 ```
 
 If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
@@ -77,7 +77,7 @@ Alternatively if the commad outputs `FAILED` than the checksum did not match and
 
 ```sh
 $ shasum -c checksums.txt --ignore-missing
-drs-downloader-macOS: FAILED
+drs_downloader.pkg: FAILED
 shasum: WARNING: 1 computed checksum did NOT match
 shasum: checksums.txt: no file was verified
 ```
@@ -93,10 +93,6 @@ For Linux to run the exe you will have to grant the file higher permissions. you
 ```sh
 chmod +x [filename]
 ```
-
-For mac you will also have to navigate to:
-System Preferences -> Security & Privacy -> Click button allow Exe to run
-
 ### Requirements
 
 The downloader requires that a Google Cloud project be designated as the billing project. In order for the downloader to authenticate and set the desired billing project the gcloud CLI tool must first be installed:

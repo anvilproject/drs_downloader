@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>DRS Downloader</title>
+    <background file="anvil.png" alignment="bottomleft" mime-type="image/png" scaling="proportional" />
+    <background-darkAqua file="anvil.png" alignment="bottomleft" mime-type="image/png" scaling="proportional" />
+    <welcome file="Welcome.html" mime-type="text/html"/>
+    <conclusion file="Conclusion.html" mime-type="text/html"/>
+
+    <pkg-ref id="org.anvilproject.drs_downloader"/>
+    <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="org.anvilproject.drs_downloader"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="org.anvilproject.drs_downloader" visible="false">
+        <pkg-ref id="org.anvilproject.drs_downloader"/>
+    </choice>
+    <pkg-ref id="org.anvilproject.drs_downloader" version="1.0.0" onConclusion="none">installer.pkg</pkg-ref>
+</installer-gui-script>
