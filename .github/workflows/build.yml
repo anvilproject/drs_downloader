@@ -203,11 +203,7 @@ jobs:
         shell: bash
         run: |
           mkdir release
-<<<<<<< HEAD
-          mv drs-downloader-*/* release
-=======
           mv drs_downloader-*/* release
->>>>>>> 32fb7f1 (Add macOS package signing to Github Actions workflow)
           cd release
           sha256sum * > checksums.txt
 
