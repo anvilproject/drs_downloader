@@ -14,6 +14,7 @@ from drs_downloader.clients.gen3 import Gen3DrsClient
 from drs_downloader.clients.mock import MockDrsClient
 from drs_downloader.clients.terra import TerraDrsClient
 from drs_downloader.manager import DrsAsyncManager
+from drs_downloader import check_for_AnVIL_URIS
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
 
@@ -145,6 +146,15 @@ def terra(
     else:
         ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
+    Contains_AnVIL_Uris = check_for_AnVIL_URIS(ids_from_manifest)
+    if Contains_AnVIL_Uris and not user_project:
+        logger.error(
+                ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were\
+provided in the manifest but no Terra workspace Google project id was given. Specify one with\
+the --user-project option")
+            )
+        exit(1)
+
     # perform downloads with a terra drs client
     _perform_downloads(
         destination_dir,
@@ -244,10 +254,14 @@ def _perform_downloads(
 ):
     """Common helper method to run downloads."""
 
-    # verify parameters
-    if destination_dir:
-        destination_dir = Path(destination_dir)
-        destination_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        if destination_dir:
+            destination_dir = Path(destination_dir)
+            if not os.path.exists(destination_dir):
+                destination_dir.mkdir(parents=True, exist_ok=True)
+    except BaseException as e:
+        logger.error(f"Invalid --destination-dir path provided: {e}")
+        exit(1)
 
     logger.info(f"Downloading to: {destination_dir.resolve()}")
 

@@ -65,15 +65,7 @@ def test_no_project_id_specified_mixed_data(caplog):
             ],
         )
         messages = caplog.messages
-        assert any("('CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.2019-02-06_Sample_NA19712_analysis_NA19712.final\
-.cram.crai', 'ERROR', 1286904, 0, ['A requestor pays AnVIL DRS URI: drs://drs.anv0:v2_c1cf1d38-f3e8-3d38-b0b8\
--cbabb7d0afa4 is specified but no Google project id is given.'])" in
-                   "".join(message) for message in messages)
-
-        assert any("('CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.2019-02-06_Sample_NA19324_analysis_NA19324.final.\
-cram.crai', 'ERROR', 1286840, 0, ['A requestor pays AnVIL DRS URI: drs://drs.anv0:v2_763e1df1-9706-3fd4-90a2\
--26e914bedeca is specified but no Google project id is given.'])" in
-                   "".join(message) for message in messages)
-
-        assert any("2/4 files have downloaded successfully" in message for message in messages)
         assert result.exit_code == 1
+        assert messages[0] == "ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were\
+provided in the manifest but no Terra workspace Google project id was given. Specify one with\
+the --user-project option"

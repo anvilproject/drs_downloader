@@ -18,3 +18,17 @@ DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS = 10
 DEFAULT_MAX_SIMULTANEOUS_DOWNLOADERS = 10
 DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS = 3
 DEFAULT_PART_SIZE = 10 * MB
+
+
+def check_for_AnVIL_URIS(uris_list: list[str]) -> bool:
+    for uri in uris_list:
+        if is_AnVIL_URI(uri):
+            return True
+
+
+def is_AnVIL_URI(uri: str) -> bool:
+    if isinstance(uri, str) and\
+        (uri.startswith("drs://drs.anv0:")
+            or uri.startswith("drs://dg.anv0:")):
+        return True
+    return False

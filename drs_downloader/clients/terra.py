@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
+from drs_downloader import is_AnVIL_URI
 
 import aiofiles
 import aiohttp
@@ -40,7 +41,7 @@ class TerraDrsClient(DrsClient):
 
     async def _get_auth_token(self) -> str:
         """Get Google Cloud authentication token.
-        User must run 'gcloud auth login' from the shell before starting this script.
+        User must run 'gcloud auth application-default login' from the shell before starting this script.
 
         Returns:
             str: auth token
@@ -133,10 +134,10 @@ option is invalid")
             "authorization": "Bearer " + self.token.token,
             "content-type": "application/json",
         }
+
         # if the uri is a AnVIL DRS uri then check if the google project format is correct
         vld_uri = False
-        if drs_object.self_uri.startswith("drs://dg.ANV0:dg.ANV0") or \
-           drs_object.self_uri.startswith("drs://drs.anv0:v2_"):
+        if is_AnVIL_URI(drs_object.self_uri):
             # if the Google project format is correct set the vld_prjct to True
             # indicating that a valid AnVIL drs uri was given with a google project id that is in the right format
             if user_project is not None and user_project.startswith("terra-") and len(user_project) == 14:
@@ -181,7 +182,7 @@ is specified but no Google project id is given.")
                                 type = "none"
                                 if "storage.googleapis.com" in url_:
                                     if verbose:
-                                        print(f"SIGNED URL: {url_}")
+                                        logger.info(f"SIGNED URL: {url_}")
 
                                     type = "gs"
                                     if "X-Goog-Credential" in url_:
