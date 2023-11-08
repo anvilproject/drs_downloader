@@ -173,13 +173,13 @@ class DrsAsyncManager(DrsManager):
 
                 except Exception:
                     signed_url = DrsObject(
-                                    self_uri="",
-                                    id="",
-                                    checksums=[],
-                                    size=0,
-                                    name=None,
-                                    errors=[f"Exception in {err_function_msg} function"],
-                                )
+                        self_uri="",
+                        id="",
+                        checksums=[],
+                        size=0,
+                        name=None,
+                        errors=[f"Exception in {err_function_msg} function"],
+                    )
 
                     drs_objects_with_signed_urls.append(signed_url)
                     t.cancel()
@@ -290,9 +290,7 @@ class DrsAsyncManager(DrsManager):
         """
 
         if (
-            None not in chunk_paths
-            and len(existing_chunks) == 0
-            and self.disable is True
+            None not in chunk_paths and len(existing_chunks) == 0 and self.disable is True
         ):
             if verbose:
                 logger.info("%s Downloaded sucessfully", drs_object.name)
@@ -301,8 +299,7 @@ class DrsAsyncManager(DrsManager):
 
         i = 1
         filename = (
-            f"{drs_object.name}"
-            or drs_object.access_methods[0].access_url.split("/")[-1].split("?")[0]
+            f"{drs_object.name}" or drs_object.access_methods[0].access_url.split("/")[-1].split("?")[0]
         )
         original_file_name = Path(filename)
         while True:

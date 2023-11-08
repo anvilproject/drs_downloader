@@ -149,10 +149,10 @@ def terra(
     Contains_AnVIL_Uris = check_for_AnVIL_URIS(ids_from_manifest)
     if Contains_AnVIL_Uris and not user_project:
         logger.error(
-                ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were\
+            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were\
 provided in the manifest but no Terra workspace Google project id was given. Specify one with\
 the --user-project option")
-            )
+        )
         exit(1)
 
     # perform downloads with a terra drs client
@@ -237,10 +237,10 @@ def pretty_size(bytes):
         (1 << 10, " KB"),
         (1, (" bytes")),
     ]
-    if (bytes/1000000000 < 1):
+    if (bytes / 1000000000 < 1):
         price = 0.1
     else:
-        price = '%.2f' % ((bytes/1000000000) * 0.1)
+        price = '%.2f' % ((bytes / 1000000000) * 0.1)
 
     for factor, suffix in units:
         if bytes >= factor:

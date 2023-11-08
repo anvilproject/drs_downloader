@@ -71,7 +71,8 @@ class Gen3DrsClient(DrsClient):
         return response.status
 
     async def download_part(
-         self, drs_object: DrsObject, start: int, size: int, destination_path: Path, verbose: bool) -> Optional[Path]:
+            self, drs_object: DrsObject, start: int, size: int,
+            destination_path: Path, verbose: bool) -> Optional[Path]:
         try:
 
             if not self.authorized:
