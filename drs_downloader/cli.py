@@ -22,12 +22,12 @@ logger = logging.getLogger()
 file_logger = logging.getLogger("file_logger")
 
 # Clear the logger file from the previous run
-with open("drs_downloader.log", "w") as fd:
-    pass
 
 
 @click.group()
 def cli():
+    with open("drs_downloader.log", "w") as _:
+        pass
     """Copy DRS objects from the cloud to your local system ."""
     pass
 
@@ -47,6 +47,7 @@ def cli():
     show_default=True,
     default=os.getcwd(),
     help="Destination directory.",
+    required=True
 )
 @click.option("--manifest-path", "-m", show_default=True, help="Path to manifest tsv.")
 @click.option(
@@ -55,6 +56,7 @@ def cli():
     show_default=True,
     help="The column header in the TSV file associated with the DRS URIs."
     "Example: pfb:ga4gh_drs_uri",
+    required=True
 )
 @click.option(
     "--duplicate",
@@ -99,8 +101,15 @@ def mock(
     show_default=True,
     default=os.getcwd(),
     help="Destination directory.",
+    required=True
 )
-@click.option("--manifest-path", "-m", show_default=True, help="Path to manifest tsv.")
+@click.option(
+    "--manifest-path",
+    "-m",
+    show_default=True,
+    help="Path to manifest tsv.",
+    required=True
+)
 @click.option(
     "--drs-column-name",
     default=None,
@@ -189,8 +198,15 @@ the --user-project option")
     show_default=True,
     default=os.getcwd(),
     help="Destination directory.",
+    required=True
 )
-@click.option("--manifest-path", "-m", show_default=True, help="Path to manifest tsv.")
+@click.option(
+    "--manifest-path",
+    "-m",
+    show_default=True,
+    help="Path to manifest tsv.",
+    required=True
+)
 @click.option(
     "--drs-column-name",
     default="ga4gh_drs_uri",
@@ -198,7 +214,11 @@ the --user-project option")
     help="The column header in the TSV file associated with the DRS URIs."
     "Example: pfb:ga4gh_drs_uri",
 )
-@click.option("--api-key-path", show_default=True, help="Gen3 credentials file")
+@click.option(
+    "--api-key-path",
+    show_default=True,
+    help="Gen3 credentials file"
+)
 @click.option("--endpoint", show_default=True, required=True, help="Gen3 endpoint")
 @click.option(
     "--duplicate",
