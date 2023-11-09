@@ -12,8 +12,6 @@ import tqdm.asyncio
 import sys
 import time
 
-# import time
-
 from drs_downloader import (
     DEFAULT_MAX_SIMULTANEOUS_OBJECT_RETRIEVERS,
     DEFAULT_MAX_SIMULTANEOUS_PART_HANDLERS,
@@ -27,12 +25,13 @@ from drs_downloader import (
 from drs_downloader.models import DrsClient, DrsObject
 
 logger = logging.getLogger()
+file_logger = logging.getLogger("file_logger")
 
 stdout_handler = logging.StreamHandler(sys.stdout)
-stdout_handler.setLevel(logging.DEBUG)
+stdout_handler.setLevel(logging.INFO)
 
 file_handler = logging.FileHandler("drs_downloader.log")
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S %Z")
 # logging.Formatter.converter = gmtime
@@ -41,7 +40,10 @@ stdout_handler.setFormatter(formatter)
 
 logger.setLevel(logging.INFO)
 logger.addHandler(stdout_handler)
-logger.addHandler(file_handler)
+
+file_logger.setLevel(logging.DEBUG)
+file_logger.addHandler(file_handler)
+file_logger.propagate = False
 
 
 class DrsManager(ABC):
@@ -211,6 +213,8 @@ class DrsAsyncManager(DrsManager):
             )
 
         if len(parts) > 1000:
+            file_logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
+                ({len(parts)})')
             if verbose:
                 logger.warning(f'Warning: tasks > 1000 {drs_object.name} has over 1000 parts and is a large download. \
                 ({len(parts)})')
@@ -256,14 +260,8 @@ class DrsAsyncManager(DrsManager):
 
             chunk_paths = await self.wait_till_completed(chunk_tasks, "download_parts")
 
-            """
-            Uncessesary logging message for the end user. When you take into account
-            that most downloads are going to take longer than 15 minutes and this message
-             will be spammed for every part that is already downlaoded when the resigning step happens.
-
             if len(existing_chunks) > 0:
-                #logger.info(f"{drs_object.name} had {len(existing_chunks)} existing parts.")
-            """
+                file_logger.info(f"{drs_object.name} had {len(existing_chunks)} existing parts.")
 
             chunk_paths.extend(existing_chunks)
             # something bad happened
@@ -276,6 +274,7 @@ class DrsAsyncManager(DrsManager):
                 ):
                     return drs_object
                 else:
+                    file_logger.error(f"{drs_object.name} had missing part.")
                     if verbose:
                         logger.error(f"{drs_object.name} had missing part.")
                     return drs_object
@@ -293,6 +292,7 @@ class DrsAsyncManager(DrsManager):
         if (
             None not in chunk_paths and len(existing_chunks) == 0 and self.disable is True
         ):
+            file_logger.info("%s Downloaded sucessfully", drs_object.name)
             if verbose:
                 logger.info("%s Downloaded sucessfully", drs_object.name)
 
@@ -341,7 +341,9 @@ class DrsAsyncManager(DrsManager):
                 f.unlink()
                 fd.close()
                 wfd.flush()
+
             T_FIN = time.time()
+            file_logger.info(f"TOTAL 'STITCHING' (md5 10*MB no flush) TIME {T_FIN-T_0} {original_file_name}")
             if verbose:
                 logger.info(f"TOTAL 'STITCHING' (md5 10*MB no flush) TIME {T_FIN-T_0} {original_file_name}")
         actual_checksum = checksum.hexdigest()
@@ -352,9 +354,9 @@ class DrsAsyncManager(DrsManager):
         expected_checksum = drs_object.checksums[0].checksum
         if expected_checksum != actual_checksum:
             msg = f"Actual {checksum_type} hash {actual_checksum} does not match expected {expected_checksum}"
+            file_logger.error(msg)
             if verbose:
-                logger.error(f"Actual {checksum_type} hash {actual_checksum} \
-                             does not match expected {expected_checksum}")
+                logger.error(msg)
             drs_object.errors.append(msg)
 
         if drs_object.size != actual_size:
@@ -380,6 +382,7 @@ class DrsAsyncManager(DrsManager):
 
         # first sign the urls
         tasks = []
+        file_logger.info(f" drs_objects before entering sign_url function {drs_objects}")
         if verbose:
             logger.info(f" drs_objects before entering sign_url function {drs_objects}")
         for drs_object in drs_objects:
@@ -401,6 +404,9 @@ class DrsAsyncManager(DrsManager):
                 tasks.append(task)
 
             else:
+                file_logger.error(
+                    f"{drs_object.id} has error {drs_object.errors}, not attempting anything further"
+                )
                 logger.error(
                     f"{drs_object.id} has error {drs_object.errors}, not attempting anything further"
                 )
@@ -495,6 +501,7 @@ class DrsAsyncManager(DrsManager):
             filtered_objects = self.filter_existing_files(
                 drs_objects, destination_path, duplicate=duplicate, verbose=verbose
             )
+            file_logger.info(f"Drs Objects after filter_existing_files function {filtered_objects}")
             if verbose:
                 logger.info(f"Drs Objects after filter_existing_files function {filtered_objects}")
 
@@ -503,10 +510,14 @@ class DrsAsyncManager(DrsManager):
                     obj for obj in drs_objects if obj not in filtered_objects
                 ]
                 for obj in complete_objects:
+                    file_logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
                     if verbose:
                         logger.info(f"{obj.name} already exists in {destination_path}. Skipping download.")
 
                 if len(filtered_objects) == 0:
+                    file_logger.info(
+                        f"All DRS objects already present in {destination_path}."
+                    )
                     logger.info(
                         f"All DRS objects already present in {destination_path}."
                     )
@@ -528,12 +539,16 @@ class DrsAsyncManager(DrsManager):
                 )
                 current += 1
                 updated_drs_objects.extend(completed_chunk)
+
+            file_logger.info(f"UPDATED DRS OBJECTS \n\n {updated_drs_objects}")
             if verbose:
                 logger.info(f"UPDATED DRS OBJECTS \n\n {updated_drs_objects}")
 
             if "RECOVERABLE in AIOHTTP" not in str(updated_drs_objects):
                 break
 
+            file_logger.info("RECOVERABLE in AIOHTTP present in some objects, so picking up where\
+left off \n\n")
             if verbose:
                 logger.info("RECOVERABLE in AIOHTTP present in some objects, so picking up where\
 left off \n\n")
@@ -567,6 +582,7 @@ left off \n\n")
             self.max_simultaneous_part_handlers = 50
             self.part_size = 64 * MB
             self.max_simultaneous_downloaders = 10
+            file_logger.info("part_size=%s", self.part_size)
             if verbose:
                 logger.info("part_size=%s", self.part_size)
 
@@ -574,6 +590,7 @@ left off \n\n")
             self.max_simultaneous_part_handlers = 3
             self.part_size = 128 * MB
             self.max_simultaneous_downloaders = 10
+            file_logger.info("part_size=%s", self.part_size)
             if verbose:
                 logger.info("part_size=%s", self.part_size)
 
@@ -581,6 +598,8 @@ left off \n\n")
             self.part_size = 1 * MB
             self.max_simultaneous_part_handlers = 2
             self.max_simultaneous_downloaders = 10
+            file_logger.info("part_size=%s", self.part_size)
+            file_logger.info("part_handlers=%s", self.max_simultaneous_part_handlers)
             if verbose:
                 logger.info("part_size=%s", self.part_size)
                 logger.info("part_handlers=%s", self.max_simultaneous_part_handlers)
@@ -589,6 +608,8 @@ left off \n\n")
             self.part_size = 128 * MB
             self.max_simultaneous_part_handlers = 10
             self.max_simultaneous_downloaders = 10
+            file_logger.info("part_size=%s", self.part_size)
+            file_logger.info("part_handlers=%s", self.max_simultaneous_part_handlers)
             if verbose:
                 logger.info("part_size=%s", self.part_size)
                 logger.info("part_handlers=%s", self.max_simultaneous_part_handlers)
@@ -608,6 +629,7 @@ left off \n\n")
             List[DrsObject]: The DRS objects that have yet to be downloaded
         """
 
+        file_logger.info(f"VALUE OF duplicate {duplicate}")
         if verbose:
             logger.info(f"VALUE OF duplicate {duplicate}")
         if duplicate is True:
@@ -627,6 +649,7 @@ left off \n\n")
             drs for drs in drs_objects if (drs.name not in os.listdir(destination_path))
             #  or drs.size != os.path.getsize(drs.name) <-- this is used for filtering out wrong sized stuff
         ]
+        file_logger.info(f"VALUE OF FILTERED OBJECTS {filtered_objects}")
         if verbose:
             logger.info(f"VALUE OF FILTERED OBJECTS {filtered_objects}")
 
@@ -647,6 +670,7 @@ left off \n\n")
 
         if file_path.exists():
             expected_size = size - start + 1
+            file_logger.info(f"EXPTECTED PART SIZE {expected_size}")
             if verbose:
                 logger.info(f"EXPTECTED PART SIZE {expected_size}")
 
@@ -659,6 +683,7 @@ left off \n\n")
                 # logger.info(f"{file_path.name} exists and has expected size. Skipping download.")
                 return True
 
+            file_logger.info(f"ACTUAL SIZE {actual_size} DOES NOT MATCH {expected_size}")
             if verbose:
                 logger.info(f"ACTUAL SIZE {actual_size} DOES NOT MATCH {expected_size}")
 

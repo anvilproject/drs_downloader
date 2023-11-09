@@ -18,8 +18,10 @@ from drs_downloader import check_for_AnVIL_URIS
 
 from drs_downloader import DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS
 
-logger = logging.getLogger()  # these control our simulation
+logger = logging.getLogger()
+file_logger = logging.getLogger("file_logger")
 
+# Clear the logger file from the previous run
 with open("drs_downloader.log", "w") as fd:
     pass
 
@@ -148,6 +150,11 @@ def terra(
 
     Contains_AnVIL_Uris = check_for_AnVIL_URIS(ids_from_manifest)
     if Contains_AnVIL_Uris and not user_project:
+        file_logger.error(
+            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were \
+provided in the manifest but no Terra workspace Google project id was given. Specify one with \
+the --user-project option")
+        )
         logger.error(
             ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were \
 provided in the manifest but no Terra workspace Google project id was given. Specify one with \
@@ -254,18 +261,31 @@ def _end_routine(drs_client: TerraDrsClient, drs_objects: List[DrsObject], verbo
     oks = 0
     for drs_object in drs_objects:
         if len(drs_object.errors) == 0:
-            if not verbose:
-                logger.info(
-                    (drs_object.name, "OK", drs_object.size, len(drs_object.file_parts))
-                )
+            file_logger.info(
+                (drs_object.name, "OK", drs_object.size, len(drs_object.file_parts))
+            )
+            logger.info(
+                (drs_object.name, "OK", drs_object.size, len(drs_object.file_parts))
+            )
             oks += 1
 
+        file_logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
         if verbose:
             logger.info(('done', 'statistics.max_files_open', drs_client.statistics.max_files_open))
+    file_logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
     logger.info("%s/%s files have downloaded successfully", oks, len(drs_objects))
 
     for drs_object in drs_objects:
         if len(drs_object.errors) > 0:
+            file_logger.error(
+                (
+                    drs_object.name,
+                    "ERROR",
+                    drs_object.size,
+                    len(drs_object.file_parts),
+                    drs_object.errors,
+                )
+            )
             logger.error(
                 (
                     drs_object.name,
@@ -292,9 +312,11 @@ def _perform_downloads(
             if not os.path.exists(destination_dir):
                 destination_dir.mkdir(parents=True, exist_ok=True)
     except BaseException as e:
+        file_logger.error(f"Invalid --destination-dir path provided: {e}")
         logger.error(f"Invalid --destination-dir path provided: {e}")
         exit(1)
 
+    file_logger.info(f"Downloading to: {destination_dir.resolve()}")
     logger.info(f"Downloading to: {destination_dir.resolve()}")
 
     # create a manager
@@ -303,21 +325,30 @@ def _perform_downloads(
     # call the server, get size, checksums etc.; sort them by size
     drs_objects = drs_manager.get_objects(ids_from_manifest, verbose=verbose)
 
+    file_logger.info(f"Drs Objects after get_objects function {drs_objects}")
     if verbose:
         logger.info(f"Drs Objects after get_objects function {drs_objects}")
 
     # If every object has an error exit early since these early errors are not recoverable
     if all(len(obj.errors) > 0 for obj in drs_objects):
+        file_logger.error("every single object recieved an\
+error in git objects function, so starting end routine early")
         logger.error("every single object recieved an error in git objects function, so starting end routine early")
         _end_routine(drs_client, drs_objects, verbose)
 
     # there are many reasons why this exception gets caught and many of them don't have
     # much to do with the object's size, but things that happen along the way
     total_size_list = [total.size for total in drs_objects]
-    assert (sum(total_size_list) > 0), (logger.error("FATAL ERROR: No size data was returned from get_objects.\
- Check your uris to make sure that they are properly formatted"), exit())
+    assert (sum(total_size_list) > 0), (
+        logger.error("FATAL ERROR: No size data was returned from get_objects.\
+ Check your uris to make sure that they are properly formatted"),
+        file_logger.error("FATAL ERROR: No size data was returned from get_objects.\
+ Check your uris to make sure that they are properly formatted"),
+        exit())
 
     total, price = pretty_size(sum(total_size_list))
+    file_logger.info(f"Total download size is {total}")
+    file_logger.info(f"Estimated download cost is ${price}")
     logger.info(f"Total download size is {total}")
     logger.info(f"Estimated download cost is ${price}")
 
@@ -327,6 +358,7 @@ def _perform_downloads(
     # optimize based on workload
     drs_objects = drs_manager.optimize_workload(verbose, drs_objects)
 
+    file_logger.info(f"Drs Objects after optimize_workload function {drs_objects}")
     if verbose:
         logger.info(f"Drs Objects after optimize_workload function {drs_objects}")
 
@@ -345,6 +377,8 @@ def _perform_downloads(
     ):
 
         if all(len(obj.errors) > 0 for obj in chunk_of_drs_objects):
+            file_logger.warning(f"Every object in the batch has an error so \
+skipping downloading for objects {chunk_of_drs_objects}")
             if verbose:
                 logger.warning(f"Every object in the batch has an error so \
 skipping downloading for objects {chunk_of_drs_objects}")

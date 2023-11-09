@@ -19,7 +19,7 @@ from aiohttp import ClientResponseError, ClientConnectorError
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
+file_logger = logging.getLogger("file_logger")
 
 
 class TerraDrsClient(DrsClient):
@@ -78,6 +78,7 @@ class TerraDrsClient(DrsClient):
 
                             # catches invalid project ids given to AnVIL data downloads
                             if "User project specified in the request is invalid" in str(text.decode('ascii')):
+                                file_logger.info(f"{str(text.decode('ascii'))}")
                                 if verbose:
                                     logger.info(f"{str(text.decode('ascii'))}")
                                 if len(drs_object.errors) == 0:
@@ -97,6 +98,7 @@ option is invalid")
             except aiohttp.ClientResponseError as f:
                 tries += 1
                 if "The provided token has expired" in str(text):
+                    file_logger.info(f"Error Text Body {str(text)}")
                     if verbose:
                         logger.info(f"Error Text Body {str(text)}")
                     drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
@@ -104,6 +106,7 @@ option is invalid")
 
                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 2:
+                    file_logger.info(f"Error Text Body {str(text)}")
                     if verbose:
                         logger.info(f"Error Text Body {str(text)}")
                         return None
@@ -112,6 +115,7 @@ option is invalid")
                 tries += 1
                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 2:
+                    file_logger.info(f"Miscellaneous Error {str(text)}")
                     if verbose:
                         logger.info(f"Miscellaneous Error {str(text)}")
                     drs_object.errors.append(f"NONRECOVERABLE ERROR {str(e)}")
@@ -122,9 +126,11 @@ option is invalid")
         assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
 
         if (self.token is None or (self.token.expired and self.token.expiry is not None)):
+            file_logger.info("fetching new token")
             if verbose:
                 logger.info("fetching new token")
             self.token = await self._get_auth_token()
+        file_logger.info(f"status of token expiration {self.token.expiry}")
         if verbose:
             logger.info(f"status of token expiration {self.token.expiry}")
 
@@ -181,6 +187,7 @@ is specified but no Google project id is given.")
                                 url_ = resp["accessUrl"]["url"]
                                 type = "none"
                                 if "storage.googleapis.com" in url_:
+                                    file_logger.info(f"SIGNED URL: {url_}")
                                     if verbose:
                                         logger.info(f"SIGNED URL: {url_}")
 
@@ -207,6 +214,8 @@ the signed URL Google credential contains unexpected value: {goog_credential}")
                                     self.token = await self._get_auth_token()
                                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                                 if tries > 2:
+                                    file_logger.error(f"value of text error  {str(text)}")
+                                    file_logger.error(f"A file has failed the signing process, specifically {str(e)}")
                                     if verbose:
                                         logger.error(f"value of text error  {str(text)}")
                                         logger.error(f"A file has failed the signing process, specifically {str(e)}")
@@ -229,6 +238,7 @@ the signed URL Google credential contains unexpected value: {goog_credential}")
                     time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                     if tries > 2:
                         drs_object.errors.append(str(e))
+                        file_logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
                         if verbose:
                             logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
                             return DrsObject(
@@ -254,10 +264,12 @@ the signed URL Google credential contains unexpected value: {goog_credential}")
         """
 
         if (self.token is None or (self.token.expired and self.token.expiry is not None)):
+            file_logger.info("fetching new token")
             if verbose:
                 logger.info("fetching new token")
             self.token = await self._get_auth_token()
 
+        file_logger.info(f"status of token expiration {self.token.expiry}")
         if verbose:
             logger.info(f"status of token expiration {self.token.expiry}")
 
@@ -298,6 +310,8 @@ the signed URL Google credential contains unexpected value: {goog_credential}")
                                 start_index = message.find("{")
                                 end_index = message.find("}")
                                 extracted_text = json.loads("{" + message[start_index + 1:end_index] + "}")
+                                file_logger.info(f'Client Response Error {extracted_text["status_code"]}: \
+{extracted_text["msg"]}')
                                 if verbose:
                                     logger.info(f'Client Response Error {extracted_text["status_code"]}: \
 {extracted_text["msg"]}')
@@ -312,6 +326,7 @@ URI: {object_id}'],
                                 )
                 except ClientConnectorError as e:
                     tries += 1
+                    file_logger.info(f"ClientConnectorError: {str(e)} while fetching object information")
                     if verbose:
                         logger.info(f"ClientConnectorError: {str(e)} while fetching object information")
                     time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
