@@ -149,8 +149,8 @@ def terra(
     Contains_AnVIL_Uris = check_for_AnVIL_URIS(ids_from_manifest)
     if Contains_AnVIL_Uris and not user_project:
         logger.error(
-            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were\
-provided in the manifest but no Terra workspace Google project id was given. Specify one with\
+            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were \
+provided in the manifest but no Terra workspace Google project id was given. Specify one with \
 the --user-project option")
         )
         exit(1)
@@ -403,7 +403,7 @@ def _extract_tsv_info(manifest_path: Path, drs_header: str) -> List[str]:
             )
 
         for url in uris:
-            if "drs://" in url:
+            if "drs://" in url or "DRS://" in url:
                 continue
             else:
                 raise Exception(
