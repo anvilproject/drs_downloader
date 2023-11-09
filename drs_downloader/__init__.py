@@ -27,7 +27,8 @@ def check_for_AnVIL_URIS(uris_list: list[str]) -> bool:
 
 
 def is_AnVIL_URI(uri: str) -> bool:
-    if isinstance(uri, str) and\
-            (uri.startswith("drs://drs.anv0:") or uri.startswith("drs://dg.anv0:")):
-        return True
+    if isinstance(uri, str):
+        uri = uri.lower()
+        if (uri.startswith("drs://drs.anv0:") or uri.startswith("drs://dg.anv0:")):
+            return True
     return False

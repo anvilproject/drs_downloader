@@ -12,14 +12,14 @@ import logging
 import google.auth.transport.requests
 import time
 import random
+import json
 
 from aiohttp import ClientResponseError, ClientConnectorError
 
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
-
 logger = logging.getLogger(__name__)
-logging.getLogger().setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)
 
 
 class TerraDrsClient(DrsClient):
@@ -292,23 +292,24 @@ the signed URL Google credential contains unexpected value: {goog_credential}")
                                     id=object_id,
                                     name=name_,
                                 )
-                            except ClientResponseError as e:
-                                tries += 1
+                            except ClientResponseError:
+                                # nested stringy json parsing
+                                message = json.loads(text)["message"]
+                                start_index = message.find("{")
+                                end_index = message.find("}")
+                                extracted_text = json.loads("{" + message[start_index + 1:end_index] + "}")
                                 if verbose:
-                                    logger.info(f"Client Response Error {str(text)}")
-                                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                                if tries > 2:
-                                    if verbose:
-                                        logger.error(f"retry failed in get_object function. \
-                                                     Exiting with error status: {str(e)}")
-                                    return DrsObject(
-                                        self_uri=object_id,
-                                        id=object_id,
-                                        checksums=[],
-                                        size=0,
-                                        name=None,
-                                        errors=[str(e)],
-                                    )
+                                    logger.info(f'Client Response Error {extracted_text["status_code"]}: \
+{extracted_text["msg"]}')
+                                return DrsObject(
+                                    self_uri=object_id,
+                                    id=object_id,
+                                    checksums=[],
+                                    size=0,
+                                    name=None,
+                                    errors=[f'{extracted_text["status_code"]}: {extracted_text["msg"]} on \
+URI: {object_id}'],
+                                )
                 except ClientConnectorError as e:
                     tries += 1
                     if verbose:

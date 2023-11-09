@@ -33,12 +33,13 @@ stdout_handler.setLevel(logging.DEBUG)
 
 file_handler = logging.FileHandler("drs_downloader.log")
 file_handler.setLevel(logging.INFO)
+
 formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S %Z")
 # logging.Formatter.converter = gmtime
 file_handler.setFormatter(formatter)
 stdout_handler.setFormatter(formatter)
 
-logging.getLogger().setLevel(logging.INFO)
+logger.setLevel(logging.INFO)
 logger.addHandler(stdout_handler)
 logger.addHandler(file_handler)
 
@@ -282,8 +283,8 @@ class DrsAsyncManager(DrsManager):
             paths.extend(chunk_paths)
 
         """
-       print(" LIST OF DRS OBJECT ERRORS AFTER DLOAD IN RUN DOWNLOAD PARTS",drs_object.errors)
-       print("RECOVERABLE? ",any(['RECOVERABLE' in str(error) for error in drs_object.errors]))
+       logger.info(" LIST OF DRS OBJECT ERRORS AFTER DLOAD IN RUN DOWNLOAD PARTS",drs_object.errors)
+       logger.info("RECOVERABLE? ",any(['RECOVERABLE' in str(error) for error in drs_object.errors]))
 
         if(any(['RECOVERABLE' in str(error) for error in drs_object.errors])):
                 return drs_object
@@ -379,6 +380,8 @@ class DrsAsyncManager(DrsManager):
 
         # first sign the urls
         tasks = []
+        if verbose:
+            logger.info(f" drs_objects before entering sign_url function {drs_objects}")
         for drs_object in drs_objects:
             if len(drs_object.errors) == 0:
                 task = asyncio.create_task(self._drs_client.sign_url(drs_object=drs_object,
@@ -403,7 +406,6 @@ class DrsAsyncManager(DrsManager):
                 )
 
         drs_objects_with_file_parts = await self.wait_till_completed(tasks, "run_download_parts")
-
         return drs_objects_with_file_parts
 
     async def _run_get_objects(
@@ -493,6 +495,9 @@ class DrsAsyncManager(DrsManager):
             filtered_objects = self.filter_existing_files(
                 drs_objects, destination_path, duplicate=duplicate, verbose=verbose
             )
+            if verbose:
+                logger.info(f"Drs Objects after filter_existing_files function {filtered_objects}")
+
             if len(filtered_objects) < len(drs_objects):
                 complete_objects = [
                     obj for obj in drs_objects if obj not in filtered_objects
@@ -529,12 +534,15 @@ class DrsAsyncManager(DrsManager):
             if "RECOVERABLE in AIOHTTP" not in str(updated_drs_objects):
                 break
 
-            else:
-                if verbose:
-                    logger.info("RECURSING \n\n\n")
+            if verbose:
+                logger.info("RECOVERABLE in AIOHTTP present in some objects, so picking up where\
+left off \n\n")
 
+            # Iterate through objects only deleting the ones that have
+            # the recoverable error
             for drsobject in drs_objects:
-                drsobject.errors.clear()
+                if "RECOVERABLE in AIOHTTP" in str(drsobject.errors):
+                    drsobject.errors.clear()
 
         return updated_drs_objects
 
