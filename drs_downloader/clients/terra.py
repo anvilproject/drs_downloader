@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
+from drs_downloader import is_AnVIL_URI
 
 import aiofiles
 import aiohttp
@@ -11,14 +12,14 @@ import logging
 import google.auth.transport.requests
 import time
 import random
+import json
 
 from aiohttp import ClientResponseError, ClientConnectorError
 
 from drs_downloader.models import DrsClient, DrsObject, AccessMethod, Checksum
 
-
 logger = logging.getLogger(__name__)
-logging.getLogger().setLevel(logging.INFO)
+file_logger = logging.getLogger("file_logger")
 
 
 class TerraDrsClient(DrsClient):
@@ -29,7 +30,7 @@ class TerraDrsClient(DrsClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.endpoint = (
-            "https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3"
+            "https://drshub.dsde-prod.broadinstitute.org/api/v4/drs/resolve"
         )
         self.token = None
 
@@ -40,7 +41,7 @@ class TerraDrsClient(DrsClient):
 
     async def _get_auth_token(self) -> str:
         """Get Google Cloud authentication token.
-        User must run 'gcloud auth login' from the shell before starting this script.
+        User must run 'gcloud auth application-default login' from the shell before starting this script.
 
         Returns:
             str: auth token
@@ -75,6 +76,16 @@ class TerraDrsClient(DrsClient):
                         if request.status > 399:
                             text = await request.content.read()
 
+                            # catches invalid project ids given to AnVIL data downloads
+                            if "User project specified in the request is invalid" in str(text.decode('ascii')):
+                                file_logger.info(f"{str(text.decode('ascii'))}")
+                                if verbose:
+                                    logger.info(f"{str(text.decode('ascii'))}")
+                                if len(drs_object.errors) == 0:
+                                    drs_object.errors.append("User project specified in --user-project \
+option is invalid")
+                                return drs_object
+
                         request.raise_for_status()
 
                         file = await aiofiles.open(file_name, "wb")
@@ -87,6 +98,7 @@ class TerraDrsClient(DrsClient):
             except aiohttp.ClientResponseError as f:
                 tries += 1
                 if "The provided token has expired" in str(text):
+                    file_logger.info(f"Error Text Body {str(text)}")
                     if verbose:
                         logger.info(f"Error Text Body {str(text)}")
                     drs_object.errors.append(f"RECOVERABLE in AIOHTTP {str(f)}")
@@ -94,6 +106,7 @@ class TerraDrsClient(DrsClient):
 
                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 2:
+                    file_logger.info(f"Error Text Body {str(text)}")
                     if verbose:
                         logger.info(f"Error Text Body {str(text)}")
                         return None
@@ -102,29 +115,48 @@ class TerraDrsClient(DrsClient):
                 tries += 1
                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                 if tries > 2:
+                    file_logger.info(f"Miscellaneous Error {str(text)}")
                     if verbose:
                         logger.info(f"Miscellaneous Error {str(text)}")
                     drs_object.errors.append(f"NONRECOVERABLE ERROR {str(e)}")
                     return None
 
-    async def sign_url(self, drs_object: DrsObject, verbose: bool) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject, user_project: str, verbose: bool) -> DrsObject:
         """No-op.  terra returns a signed url in `get_object`"""
-
         assert isinstance(drs_object, DrsObject), "A DrsObject should be passed"
 
         if (self.token is None or (self.token.expired and self.token.expiry is not None)):
+            file_logger.info("fetching new token")
             if verbose:
                 logger.info("fetching new token")
             self.token = await self._get_auth_token()
-
+        file_logger.info(f"status of token expiration {self.token.expiry}")
         if verbose:
             logger.info(f"status of token expiration {self.token.expiry}")
 
         data = {"url": drs_object.id, "fields": ["accessUrl"]}
+
         headers = {
             "authorization": "Bearer " + self.token.token,
             "content-type": "application/json",
         }
+
+        # if the uri is a AnVIL DRS uri then check if the google project format is correct
+        vld_uri = False
+        if is_AnVIL_URI(drs_object.self_uri):
+            # if the Google project format is correct set the vld_prjct to True
+            # indicating that a valid AnVIL drs uri was given with a google project id that is in the right format
+            if user_project is not None and user_project.startswith("terra-") and len(user_project) == 14:
+                headers["x-user-project"] = user_project
+                vld_uri = True
+
+            elif user_project is None or not user_project.startswith("terra-") or len(user_project) != 14:
+                # Since this would mean a user isn't providing a project id to an AnVIL uri,
+                # or the project id potentially could be invalid stop the downloader before it signs the URI
+                drs_object.errors.append(f"A requestor pays AnVIL DRS URI: {drs_object.self_uri} \
+is specified but no Google project id is given.")
+                return drs_object
+
         tries = 0
         context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
@@ -155,7 +187,22 @@ class TerraDrsClient(DrsClient):
                                 url_ = resp["accessUrl"]["url"]
                                 type = "none"
                                 if "storage.googleapis.com" in url_:
+                                    file_logger.info(f"SIGNED URL: {url_}")
+                                    if verbose:
+                                        logger.info(f"SIGNED URL: {url_}")
+
                                     type = "gs"
+                                    if "X-Goog-Credential" in url_:
+                                        goog_credential = url_.split("X-Goog-Credential=")[1]
+                                        # If a valid Google project and valid AnVIL DRS uri is used but
+                                        # the signed url does not include the requestor pays pet character
+                                        # add an error to the Drs object so that it does not continue
+                                        # the downloading process
+                                        # since AnVIL DRS uris must be using requestor pays methods
+                                        if vld_uri and not goog_credential.startswith("pet-"):
+                                            drs_object.errors.append(f"Requestor pays user project is specified but \
+the signed URL Google credential contains unexpected value: {goog_credential}")
+                                            return drs_object
 
                                 drs_object.access_methods = [
                                     AccessMethod(access_url=url_, type=type)
@@ -167,6 +214,8 @@ class TerraDrsClient(DrsClient):
                                     self.token = await self._get_auth_token()
                                 time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                                 if tries > 2:
+                                    file_logger.error(f"value of text error  {str(text)}")
+                                    file_logger.error(f"A file has failed the signing process, specifically {str(e)}")
                                     if verbose:
                                         logger.error(f"value of text error  {str(text)}")
                                         logger.error(f"A file has failed the signing process, specifically {str(e)}")
@@ -189,6 +238,7 @@ class TerraDrsClient(DrsClient):
                     time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
                     if tries > 2:
                         drs_object.errors.append(str(e))
+                        file_logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
                         if verbose:
                             logger.error(f"retry failed in sign_url function. Exiting with error status: {str(e)}")
                             return DrsObject(
@@ -214,20 +264,23 @@ class TerraDrsClient(DrsClient):
         """
 
         if (self.token is None or (self.token.expired and self.token.expiry is not None)):
+            file_logger.info("fetching new token")
             if verbose:
                 logger.info("fetching new token")
             self.token = await self._get_auth_token()
 
+        file_logger.info(f"status of token expiration {self.token.expiry}")
         if verbose:
             logger.info(f"status of token expiration {self.token.expiry}")
 
         data = {"url": object_id, "fields": ["fileName", "size", "hashes"]}
         headers = {
             "authorization": "Bearer " + self.token.token,
-            "content-type": "application/json",
+            "content-type": "application/json"
+            ""
         }
-        tries = 0
 
+        tries = 0
         context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
             while True:  # this is here for the somewhat more common Martha disconnects.
@@ -251,25 +304,29 @@ class TerraDrsClient(DrsClient):
                                     id=object_id,
                                     name=name_,
                                 )
-                            except ClientResponseError as e:
-                                tries += 1
+                            except ClientResponseError:
+                                # nested stringy json parsing
+                                message = json.loads(text)["message"]
+                                start_index = message.find("{")
+                                end_index = message.find("}")
+                                extracted_text = json.loads("{" + message[start_index + 1:end_index] + "}")
+                                file_logger.info(f'Client Response Error {extracted_text["status_code"]}: \
+{extracted_text["msg"]}')
                                 if verbose:
-                                    logger.info(f"Client Response Error {str(text)}")
-                                time.sleep((random.randint(0, 1000) / 1000) + 2**tries)
-                                if tries > 2:
-                                    if verbose:
-                                        logger.error(f"retry failed in get_object function. \
-                                                     Exiting with error status: {str(e)}")
-                                    return DrsObject(
-                                        self_uri=object_id,
-                                        id=object_id,
-                                        checksums=[],
-                                        size=0,
-                                        name=None,
-                                        errors=[str(e)],
-                                    )
+                                    logger.info(f'Client Response Error {extracted_text["status_code"]}: \
+{extracted_text["msg"]}')
+                                return DrsObject(
+                                    self_uri=object_id,
+                                    id=object_id,
+                                    checksums=[],
+                                    size=0,
+                                    name=None,
+                                    errors=[f'{extracted_text["status_code"]}: {extracted_text["msg"]} on \
+URI: {object_id}'],
+                                )
                 except ClientConnectorError as e:
                     tries += 1
+                    file_logger.info(f"ClientConnectorError: {str(e)} while fetching object information")
                     if verbose:
                         logger.info(f"ClientConnectorError: {str(e)} while fetching object information")
                     time.sleep((random.randint(0, 1000) / 1000) + 2**tries)

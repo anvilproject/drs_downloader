@@ -25,7 +25,9 @@ BAD_SIGNATURE = "drs://" + str(uuid.uuid5(uuid.NAMESPACE_DNS, "BAD_SIGNATURE"))
 class MockDrsClient(DrsClient):
     """Simulate responses from server."""
 
-    async def sign_url(self, drs_object: DrsObject, verbose: bool = False) -> Optional[DrsObject]:
+    async def sign_url(self, drs_object: DrsObject,
+                       user_project: str = None,
+                       verbose: bool = False) -> Optional[DrsObject]:
         """Simulate url signing by waiting 1-3 seconds, return populated DrsObject
 
         Args:

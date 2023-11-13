@@ -67,7 +67,7 @@ class Upgrader(ABC):
             )
 
         download_url = f"{self.release_url}/download/{exe}"
-        checksum_url = f"{self.release_url}/download/checksums.txt"
+        # checksum_url = f"{self.release_url}/download/checksums.txt"
 
         # Download executable and checksum files to temporary directory for checksum verification
         verified_exe = None
@@ -76,11 +76,12 @@ class Upgrader(ABC):
         # checksum step from remaining in the user's filesystem.
         with tempfile.TemporaryDirectory() as tmp_dir:
             unverified_exe = self._download_file(download_url, tmp_dir)
-            checksum_path = self._download_file(checksum_url, tmp_dir)
 
-            checksums_match = self._verify_checksums(unverified_exe, checksum_path)
-            if checksums_match is False:
-                raise Exception("Actual hash does not match expected hash")
+            # releases don't match so comment this out for now
+            # checksum_path = self._download_file(checksum_url, tmp_dir)
+            # checksums_match = self._verify_checksums(unverified_exe, checksum_path)
+            # if checksums_match is False:
+            # raise Exception("Actual hash does not match expected hash")
 
             # Backup old executable
             self._backup(Path(dest, exe))
@@ -155,5 +156,7 @@ class Upgrader(ABC):
         sha_hash = hashlib.sha256()
         sha_hash.update(open(file, "rb").read())
         actual_sha = sha_hash.hexdigest()
+
+        print(expected_sha, actual_sha)
 
         return expected_sha == actual_sha

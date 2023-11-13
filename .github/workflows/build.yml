@@ -54,10 +54,7 @@ jobs:
 
       - name: Unit tests (No server dependencies) with pytest
         run: pytest tests/unit --cov=drs_downloader --cov-report term-missing
-
-      # - name: Unit and Integration tests with pytest
-      #   run: pytest tests/unit tests/integration --cov=drs_downloader --cov-report term-missing
-
+  
   build-linux:
     needs: test
     runs-on: ubuntu-latest
@@ -74,7 +71,7 @@ jobs:
         with:
           python-version: "3.10" 
 
-      - name: Install dependencies
+      - name: Build executable
         shell: bash
         run: |
           python -m venv venv
@@ -104,7 +101,7 @@ jobs:
         with:
           python-version: "3.10" 
   
-      - name: Install dependencies
+      - name: Build executable
         shell: bash
         run: |
           python -m venv venv
