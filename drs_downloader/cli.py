@@ -63,8 +63,8 @@ def cli():
     default=False,
     is_flag=True,
     show_default=True,
-    help="This flag is used to specify wether \
-    or not to download the file again if it already exists in the directory"
+    help="This flag is used to specify wether"
+    "or not to download the file again if it already exists in the directory"
     "Example: True",
 )
 def mock(
@@ -120,24 +120,24 @@ def mock(
     "--user-project", "-u",
     default=None,
     show_default=True,
-    help="This option is used to specify the Terra Workspace \
-          Google project id if the requester is paying for the download",
+    help="This option is used to specify the Terra Workspace"
+         "Google project id if the requester is paying for the download",
 )
 @click.option(
     "--duplicate",
     default=False,
     is_flag=True,
     show_default=True,
-    help="This flag is used to specify wether \
-    or not to download the file again if it already exists in the directory"
+    help="This flag is used to specify wether"
+    "or not to download the file again if it already exists in the directory"
     "Example: True",
 )
 @click.option(
     "--string-mode",
     default=None,
     show_default=True,
-    help="This option is used when you want to run the downloader with URIS\
-          that you provide in string form with uris seperated by commas the command line. ex: 'uri1, uri2, uri3'",
+    help="This option is used when you want to run the downloader with URIS"
+         "that you provide in string form with uris seperated by commas the command line. ex: 'uri1, uri2, uri3'",
 )
 def terra(
     verbose: bool,
@@ -160,14 +160,14 @@ def terra(
     Contains_AnVIL_Uris = check_for_AnVIL_URIS(ids_from_manifest)
     if Contains_AnVIL_Uris and not user_project:
         file_logger.error(
-            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were \
-provided in the manifest but no Terra workspace Google project id was given. Specify one with \
-the --user-project option")
+            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were"
+             "provided in the manifest but no Terra workspace Google project id was given. Specify one with"
+             "the --user-project option")
         )
         logger.error(
-            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were \
-provided in the manifest but no Terra workspace Google project id was given. Specify one with \
-the --user-project option")
+            ("ERROR: AnVIL Drs URIS starting with  'drs://drs.anv0:' or 'drs://dg.anv0: were"
+             "provided in the manifest but no Terra workspace Google project id was given. Specify one with"
+             "the --user-project option")
         )
         exit(1)
 
@@ -212,7 +212,7 @@ the --user-project option")
     default="ga4gh_drs_uri",
     show_default=True,
     help="The column header in the TSV file associated with the DRS URIs."
-    "Example: pfb:ga4gh_drs_uri",
+         "Example: pfb:ga4gh_drs_uri",
 )
 @click.option(
     "--api-key-path",
@@ -225,9 +225,9 @@ the --user-project option")
     default=False,
     is_flag=True,
     show_default=True,
-    help="This flag is used to specify wether \
-    or not to download the file again if it already exists in the directory"
-    "Example: True",
+    help="This flag is used to specify wether"
+         "or not to download the file again if it already exists in the directory"
+         "Example: True",
 )
 def gen3(
     verbose: bool,
@@ -387,15 +387,18 @@ error in git objects function, so starting end routine early")
     if math.ceil(total_batches) - total_batches > 0:
         total_batches += 1
         total_batches = int(total_batches)
-    for chunk_of_drs_objects in tqdm.tqdm(
+
+    progress_bar = tqdm.tqdm(
         DrsAsyncManager.chunker(drs_objects, DEFAULT_MAX_SIMULTANEOUS_OBJECT_SIGNERS),
         total=total_batches,
         desc="TOTAL_DOWNLOAD_PROGRESS",
         leave=False,
         file=sys.stdout,
         disable=(total_batches == 1),
-    ):
+    )
 
+    for chunk_of_drs_objects in progress_bar:
+        file_logger.info(str(progress_bar))
         if all(len(obj.errors) > 0 for obj in chunk_of_drs_objects):
             file_logger.warning(f"Every object in the batch has an error so \
 skipping downloading for objects {chunk_of_drs_objects}")

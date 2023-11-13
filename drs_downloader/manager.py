@@ -164,30 +164,28 @@ class DrsAsyncManager(DrsManager):
         yield start, size
 
     async def wait_till_completed(self, tasks, err_function_msg):
-        drs_objects_with_signed_urls = []
+        completed_tasks = []
         while tasks:
             done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
-            for t in tqdm.tqdm(done, total=len(tasks),
-                               desc=f"retrieving {err_function_msg} information",
-                               disable=self.disable):
+            for t in done:
                 try:
                     y = await t
-                    drs_objects_with_signed_urls.append(y)
+                    completed_tasks.append(y)
 
                 except Exception:
-                    signed_url = DrsObject(
+                    updated_drs_object = DrsObject(
                         self_uri="",
                         id="",
                         checksums=[],
                         size=0,
                         name=None,
-                        errors=[f"Exception in {err_function_msg} function"],
+                        errors=[f"Exception in {err_function_msg} function"]
                     )
 
-                    drs_objects_with_signed_urls.append(signed_url)
+                    completed_tasks.append(updated_drs_object)
                     t.cancel()
 
-        return drs_objects_with_signed_urls
+        return completed_tasks
 
     async def _run_download_parts(
         self, drs_object: DrsObject, destination_path: Path, verbose: bool
@@ -226,14 +224,17 @@ class DrsAsyncManager(DrsManager):
 
         paths = []
         # TODO - tqdm ugly here?
-        for chunk_parts in tqdm.tqdm(
+        progress_bar = tqdm.tqdm(
             DrsAsyncManager.chunker(parts, self.max_simultaneous_part_handlers),
             total=math.ceil(len(parts) / self.max_simultaneous_part_handlers),
             desc="File Download Progress",
             file=sys.stdout,
             leave=False,
             disable=self.disable,
-        ):
+        )
+        for chunk_parts in progress_bar:
+            file_logger.info(str(progress_bar))
+
             chunk_tasks = []
             existing_chunks = []
             for start, size in chunk_parts:
@@ -322,14 +323,16 @@ class DrsAsyncManager(DrsManager):
             drs_object.file_parts.sort(key=lambda x: int(str(x).split(".")[-3]))
 
             T_0 = time.time()
-            for f in tqdm.tqdm(
+            progress_bar = tqdm.tqdm(
                 drs_object.file_parts,
                 total=len(drs_object.file_parts),
                 desc=f"       {drs_object.name:50.50} stitching",
                 file=sys.stdout,
                 leave=False,
                 disable=self.disable,
-            ):
+            )
+            for f in progress_bar:
+                file_logger.info(str(progress_bar))
                 fd = open(f, "rb")  # NOT ASYNC
                 wrapped_fd = Wrapped(fd, checksum)
                 # efficient way to write
@@ -468,11 +471,20 @@ class DrsAsyncManager(DrsManager):
         # actually downloaded since there are only 9 batches. math.ciel would round up if there is a decimal at all
 
         current = 0
+        progress = tqdm.tqdm(
+            DrsAsyncManager.chunker(
+                object_ids, self.max_simultaneous_object_retrievers),
+            total=total_batches,
+            desc="Get Objects Progress",
+            file=sys.stdout,
+            leave=False,
+            disable=self.disable)
 
-        for chunk_of_object_ids in DrsAsyncManager.chunker(
-            object_ids, self.max_simultaneous_object_retrievers
-        ):
+        for chunk_of_object_ids in progress:
+            file_logger.info(str(progress))
 
+            if verbose:
+                logger.info(f'Batch {chunk_of_object_ids} of {total_batches}')
             drs_objects.extend(
                 asyncio.run(
                     self._run_get_objects(
@@ -516,10 +528,10 @@ class DrsAsyncManager(DrsManager):
 
                 if len(filtered_objects) == 0:
                     file_logger.info(
-                        f"All DRS objects already present in {destination_path}."
+                        f"Some DRS objects already present in {destination_path}."
                     )
                     logger.info(
-                        f"All DRS objects already present in {destination_path}."
+                        f"Some DRS objects already present in {destination_path}."
                     )
                     return
 
@@ -670,9 +682,9 @@ left off \n\n")
 
         if file_path.exists():
             expected_size = size - start + 1
-            file_logger.info(f"EXPTECTED PART SIZE {expected_size}")
+            file_logger.info(f"EXPECTED PART SIZE {expected_size}")
             if verbose:
-                logger.info(f"EXPTECTED PART SIZE {expected_size}")
+                logger.info(f"EXPECTED PART SIZE {expected_size}")
 
             actual_size = file_path.stat().st_size
             sizes_match = (actual_size == expected_size)
