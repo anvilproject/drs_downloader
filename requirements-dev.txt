@@ -1,4 +1,4 @@
-mkdocs==1.5.2
+mkdocs==1.5.3
 pytest==8.0.0
 flake8
 pyinstaller
