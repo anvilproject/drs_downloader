@@ -1,18 +1,24 @@
 # DRS Downloader <!-- omit from toc -->
 
+
 [![DRS Downloader][build-badge]][build-link]
 
 [build-badge]: https://github.com/anvilproject/drs_downloader/actions/workflows/build.yml/badge.svg
 [build-link]: https://github.com/anvilproject/drs_downloader/actions/workflows/build.yml
 
-A file download tool for AnVIL/TDR data identified by DRS URIs
+## About
+A file download tool for AnVIL/TDR data identified by Data Repository Service URIs ([DRS URIs](https://support.terra.bio/hc/en-us/articles/360039330211-Overview-Interoperable-data-GA4GH-DRS-URIs)).
 
+## Table of Contents
+- [About](#about)
+- [Table of Contents](#table-of-contents)
 - [Installation](#installation)
   - [Checksum Verification](#checksum-verification)
 - [Running the Executable](#running-the-executable)
   - [Requirements](#requirements)
     - [Authentication](#authentication)
 - [Usage](#usage)
+  - [Manifests](#manifests)
   - [Quick Start](#quick-start)
     - [Arguments](#arguments)
   - [Basic Example](#basic-example)
@@ -88,17 +94,27 @@ In such a case please reach out to the contributors for assistance.
 
 ## Running the Executable
 
-For Linux to run the exe you will have to grant the file higher permissions. you can do this by running:
+**For Linux** to run the exe you will have to grant the file higher permissions. you can do this by running:
 
 ```sh
 chmod +x [filename]
 ```
+
+**For Mac**, the binary is installed in `/Applications` by default. To run `drs_downloader` rather than `/Applications/drs_downloader` every time, move the binary to an existing directory in the `PATH` variable, eg:
+
+```sh
+sudo mv /Applications/drs_downloader /usr/local/bin/
+```
+
+Alternatively, you can add your current directory to the PATH variable so the binary is globally executable.
+
+
 ### Requirements
 
 The downloader requires that a Google Cloud project be designated as the billing project. In order for the downloader to authenticate and set the desired billing project the gcloud CLI tool must first be installed:
 
 - [gcloud CLI](https://cloud.google.com/sdk/docs/install) — used to authenticate the downloader and set the billing project.
-- [Python](https://www.python.org/) — required for gcloud CLI functionality.
+- [Python](https://www.python.org/) (>= 3.10) — required for gcloud CLI functionality.
 
 #### Authentication
 
@@ -123,7 +139,14 @@ To change the billing project at any time you may use either the `$ gcloud confi
 $ drs_downloader terra --project-id Project ID>
 ```
 
+
 ## Usage
+
+### Manifests
+
+A manifest is a tsv file where at least one column contains a set of drs IDs, such as this [minimal manifest file](tests/fixtures/gen3-small.tsv). These manifests can either be created by hand or downloaded from the [AnVIL Data Explorer](https://explore.anvilproject.org/files) or a Terra workspace data page.
+
+More on [manifests](https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.4.0/docs/#tag/Working-With-Compound-Objects/Compound-Objects) according to DRS can be found here.
 
 ### Quick Start
 
@@ -145,7 +168,7 @@ $ drs_downloader terra -m <manifest file> -d <destination directory>
 
 > The manifest file that contains the DRS Objects to be downloaded. Typically a TSV file with one row per DRS Object.
 
-`--drs_header TEXT`
+`--drs-column-name TEXT`
 
 > The value of the column in the manifest file containing the DRS Object IDs. Defaults to `pfb:ga4gh_drs_uri` if no value is provided.
 
@@ -158,11 +181,9 @@ $ drs_downloader terra -m <manifest file> -d <destination directory>
 
 The below command is a basic example of how to structure a download command with all of the required arguments. It uses:
 
-- a **manifest file** called [`terra-data.tsv`][terra-data] with 10 DRS Objects
-- a **DRS header value** of `pfb:ga4gh_drs_uri` within the manifest file to reference the DRS Objects. It can be omitted since this is the default value used by the downloader.
+- a **manifest file** called [`terra-data.tsv`](tests/fixtures/terra-data.tsv) with 10 DRS Objects.
+- a **DRS column ID value** of `pfb:ga4gh_drs_uri` within the manifest file to reference the DRS objects. It can be omitted since this is the default value used by the downloader.
 - a **download directory** called `DATA` as the destination
-
-[terra-data]: https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-data.tsv
 
 ```sh
 $ drs_downloader terra -m tests/fixtures/manifest/terra-data.tsv -d DATA
@@ -194,10 +215,10 @@ NA18613.final.cram.crai NA20525.final.cram.crai
 
 ### Example with a Different Header Value
 
-Let's take a look at different manifest file called [`terra-different-header.tsv`][terra-different-header]. Namely the DRS header value is now `drs_uri` so we will need to tell the downloader which column to find the DRS URI's in the manifest with the `--drs_header` flag:
+Let's take a look at different manifest file called [`terra-different-header.tsv`][terra-different-header]. Namely the DRS header value is now `drs_uri` so we will need to tell the downloader which column to find the DRS URI's in the manifest with the `--drs-column-name` flag:
 
 ```sh
-drs_downloader terra -m tests/fixtures/manifests/terra-different-header.tsv -d DATA --drs_header drs_uri
+drs_downloader terra -m tests/fixtures/manifests/terra-different-header.tsv -d DATA --drs-column-name drs_uri
 ```
 
 This will download the DRS Objects specified in the `drs_uri` column into the `DATA` directory just as before.
@@ -220,7 +241,7 @@ Options:
   -d, --destination_dir TEXT  Destination directory.  [default: /tmp/testing]
   -m, --manifest_path TEXT    Path to manifest tsv.
   --duplicate                 allow duplicate downloads with same file name
-  --drs_header TEXT           The column header in the TSV file associated
+  --drs-column-name TEXT           The column header in the TSV file associated
                               with the DRS URIs.Example: pfb:ga4gh_drs_uri
   --help                      Show this message and exit.
 ```
