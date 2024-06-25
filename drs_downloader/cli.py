@@ -240,6 +240,7 @@ def gen3(
 ):
     """Copy files from gen3 server."""
     # read from manifest
+    assert api_key_path is not None, "If using gen3 mode an api key path must be provided with --api-key-path"
     ids_from_manifest = _extract_tsv_info(Path(manifest_path), drs_column_name)
 
     _perform_downloads(
@@ -346,8 +347,6 @@ def _perform_downloads(
     drs_objects = drs_manager.get_objects(ids_from_manifest, verbose=verbose)
 
     file_logger.info(f"Drs Objects after get_objects function {drs_objects}")
-    if verbose:
-        logger.info(f"Drs Objects after get_objects function {drs_objects}")
 
     # If every object has an error exit early since these early errors are not recoverable
     if all(len(obj.errors) > 0 for obj in drs_objects):

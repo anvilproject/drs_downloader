@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import ssl
+import certifi
 from pathlib import Path
 from typing import Optional
 
@@ -98,7 +100,7 @@ class Gen3DrsClient(DrsClient):
             drs_object.errors.append(str(e))
             return None
 
-    async def sign_url(self, drs_object: DrsObject, verbose: bool) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject, verbose: bool, user_project=None) -> DrsObject:
         """Call fence's /user/data/download/ endpoint."""
 
         headers = {
@@ -143,10 +145,11 @@ class Gen3DrsClient(DrsClient):
             "authorization": "Bearer " + self.token,
             "content-type": "application/json",
         }
-
+        context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(
-                url=f"{self.endpoint}{self.drs_api}/{object_id.split(':')[-1]}"
+                url=f"{self.endpoint}{self.drs_api}/{object_id.split(':')[-1]}",
+                ssl=context
             ) as response:
                 try:
                     self.statistics.set_max_files_open()

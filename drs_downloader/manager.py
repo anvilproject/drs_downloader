@@ -172,14 +172,14 @@ class DrsAsyncManager(DrsManager):
                     y = await t
                     completed_tasks.append(y)
 
-                except Exception:
+                except Exception as e:
                     updated_drs_object = DrsObject(
                         self_uri="",
                         id="",
                         checksums=[],
                         size=0,
                         name=None,
-                        errors=[f"Exception in {err_function_msg} function"]
+                        errors=[f"Exception in {err_function_msg} function {str(e)}"]
                     )
 
                     completed_tasks.append(updated_drs_object)
