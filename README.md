@@ -227,7 +227,7 @@ This will download the DRS Objects specified in the `drs_uri` column into the `D
 
 ### Help/Additional Options
 
-To see all available flags run the `help` command:
+To see all available flags run the `help` command: 
 
 ```sh
 $ drs_downloader terra --help
