@@ -22,15 +22,16 @@ def test_interrupted_download(caplog):
     directory within tests/fixtures.
 
     In the interrupted download directory there are:
-        - 10 total DRS objects
-        - 1 complete DRS object (HG04209.final.cram.crai)
-        - 9 incomplete DRS objects
+        - 9 total DRS objects
+        - 1 complete DRS object CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.
+        cram.2019-02-06_Sample_HG02982_analysis_HG02982.final.cram.crai
+        - 8 incomplete DRS objects
     """
 
     caplog.set_level(logging.INFO)
     complete_files = sorted(next(os.walk(COMPLETE_DOWNLOAD))[2])
     assert (
-        len(complete_files) == 10
+        len(complete_files) == 9
     )  # asserting that the fixtures have the expected number of files
 
     with tempfile.TemporaryDirectory() as dest:
@@ -92,30 +93,51 @@ def test_check_existing_files():
 
     with tempfile.TemporaryDirectory() as dest:
         replace = False
-        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace)
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace, verbose=True)
         assert len(filtered_objects) == len(drs_objects)
 
-        shutil.copy2(PARTS / "HG00536.final.cram.crai", dest)
-        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace)
+        shutil.copy2(PARTS / "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG02982_analysis_HG02982.final.cram.crai", dest)
+        filtered_objects = drs_manager.filter_existing_files(drs_objects, dest, replace, verbose=True)
         assert len(filtered_objects) == len(drs_objects) - 1
 
     # Part files that have been completely downloaded
-    complete_parts = [
-        "HG00536.final.cram.crai.0.1048576.part",
-        "HG00622.final.cram.crai.0.1048576.part",
-        "HG02450.final.cram.crai.0.1048576.part",
-    ]
+    complete_parts = []
 
     # Part files that were incompletely downloaded when the download terminated
     incomplete_parts = [
-        "HG00536.final.cram.crai.1048577.1244278.part",
-        "HG01552.final.cram.crai.0.1048576.part",
-        "HG02142.final.cram.crai.0.1048576.part",
-        "HG02450.final.cram.crai.1048577.1405458.part",
-        "HG03873.final.cram.crai.0.1048576.part",
-        "NA18613.final.cram.crai.0.1048576.part",
-        "NA20356.final.cram.crai.0.1048576.part",
-        "NA20525.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG00188_analysis_HG00188.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG01923_analysis_HG01923.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG02315_analysis_HG02315.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG02840_analysis_HG02840.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_NA11918_analysis_NA11918.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_NA19062_analysis_NA19062.final.cram.crai.0.1048576.part",
+        "CCDG_14151_Project_CCDG_14151_B01_GRM_WGS.cram.\
+2020-02-12_Sample_HG00639_analysis_HG00639.final.cram.crai.0.1048576.part",
+        "CCDG_14151_Project_CCDG_14151_B01_GRM_WGS.cram.\
+2020-02-12_Sample_NA12344_analysis_NA12344.final.cram.crai.0.1048576.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG00188_analysis_HG00188.final.cram.crai.1048577.1267310.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG01923_analysis_HG01923.final.cram.crai.1048577.1267264.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG02315_analysis_HG02315.final.cram.crai.1048577.1267655.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG02840_analysis_HG02840.final.cram.crai.1048577.1267330.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_NA11918_analysis_NA11918.final.cram.crai.1048577.1267432.part",
+        "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_NA19062_analysis_NA19062.final.cram.crai.1048577.1267131.part",
+        "CCDG_14151_Project_CCDG_14151_B01_GRM_WGS.cram.\
+2020-02-12_Sample_HG00639_analysis_HG00639.final.cram.crai.1048577.1267744.part",
+        "CCDG_14151_Project_CCDG_14151_B01_GRM_WGS.cram.\
+2020-02-12_Sample_NA12344_analysis_NA12344.final.cram.crai.1048577.1267830.part"
     ]
 
     with tempfile.TemporaryDirectory() as dest:
@@ -135,18 +157,19 @@ def _part_exists(part_file: str, dest: str) -> bool:
     drs_manager, _ = _get_drs_manager()
 
     part_path = Path(dest, part_file)
-    return drs_manager.check_existing_parts(part_path, start, size)
+    print("start: ", start, "size: ", size)
+    return drs_manager.check_existing_parts(part_path, start, size, verbose=True)
 
 
 def _get_drs_manager():
     tsv_path = MANIFESTS / "terra-data.tsv"
-    drs_header = "pfb:ga4gh_drs_uri"
+    drs_header = "pfb:drs_uri"
 
     # get a drs client
     drs_client = TerraDrsClient()
     # assign it to a manager
     drs_manager = DrsAsyncManager(drs_client=drs_client)
     ids_from_manifest = _extract_tsv_info(Path(tsv_path), drs_header)
-    drs_objects = drs_manager.get_objects(ids_from_manifest,)
+    drs_objects = drs_manager.get_objects(ids_from_manifest, verbose=True)
     drs_objects.sort(key=lambda x: x.size, reverse=False)
     return drs_manager, drs_objects
