@@ -20,6 +20,9 @@ on:
       - '**'
   pull_request:
     branches: [ "main" ]
+  # Allow developers to start this workflow from the Actions page with 'workflow_dispatch'
+  # https://github.com/anvilproject/drs_downloader/actions
+  workflow_dispatch:
 
 permissions:
   contents: write
