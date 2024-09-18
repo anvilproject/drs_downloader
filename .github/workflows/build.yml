@@ -83,7 +83,7 @@ jobs:
           pyinstaller drs_downloader/cli.py --onefile --name drs_downloader
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: drs_downloader-linux
           path: ./dist/drs_downloader
@@ -113,7 +113,7 @@ jobs:
           pyinstaller drs_downloader/cli.py --onefile --name drs_downloader
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: drs_downloader-windows
           path: ./dist/drs_downloader.exe
@@ -185,7 +185,7 @@ jobs:
           xcrun stapler staple drs_downloader_signed.pkg
           mv drs_downloader_signed.pkg drs_downloader.pkg
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: drs_downloader-macos
           path: drs_downloader.pkg
@@ -197,7 +197,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v4
 
       - name: Create checksums
         shell: bash
