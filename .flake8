@@ -1,5 +1,8 @@
 [flake8]
+per-file-ignores =
+	tests/integration/test_problems.py:E501
 max-line-length=120
+ignore = W605
 
 exclude =
     __pycache__

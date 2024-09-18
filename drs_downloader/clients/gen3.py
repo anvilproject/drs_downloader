@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import ssl
+import certifi
 from pathlib import Path
 from typing import Optional
 
@@ -71,8 +73,8 @@ class Gen3DrsClient(DrsClient):
         return response.status
 
     async def download_part(
-        self, drs_object: DrsObject, start: int, size: int, destination_path: Path
-    ) -> Optional[Path]:
+            self, drs_object: DrsObject, start: int, size: int,
+            destination_path: Path, verbose: bool) -> Optional[Path]:
         try:
 
             if not self.authorized:
@@ -98,7 +100,7 @@ class Gen3DrsClient(DrsClient):
             drs_object.errors.append(str(e))
             return None
 
-    async def sign_url(self, drs_object: DrsObject) -> DrsObject:
+    async def sign_url(self, drs_object: DrsObject, verbose: bool, user_project=None) -> DrsObject:
         """Call fence's /user/data/download/ endpoint."""
 
         headers = {
@@ -124,7 +126,7 @@ class Gen3DrsClient(DrsClient):
                     drs_object.errors.append(str(e))
                     return drs_object
 
-    async def get_object(self, object_id: str) -> DrsObject:
+    async def get_object(self, object_id: str, verbose: bool) -> DrsObject:
         """Sends a POST request for the signed URL, hash, and file size of a given DRS object.
 
         Args:
@@ -143,10 +145,11 @@ class Gen3DrsClient(DrsClient):
             "authorization": "Bearer " + self.token,
             "content-type": "application/json",
         }
-
+        context = ssl.create_default_context(cafile=certifi.where())
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(
-                url=f"{self.endpoint}{self.drs_api}/{object_id.split(':')[-1]}"
+                url=f"{self.endpoint}{self.drs_api}/{object_id.split(':')[-1]}",
+                ssl=context
             ) as response:
                 try:
                     self.statistics.set_max_files_open()

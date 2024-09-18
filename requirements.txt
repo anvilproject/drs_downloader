@@ -1,5 +1,6 @@
-click==8.1.7
-aiohttp
+
+click>=8.1.7
+aiohttp>=3.10.5 
 tqdm
 aiofiles
 requests

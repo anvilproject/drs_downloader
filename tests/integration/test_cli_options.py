@@ -4,6 +4,8 @@ import subprocess
 import tempfile
 import hashlib
 from pathlib import Path
+import base64
+
 
 from click.testing import CliRunner
 import time
@@ -46,9 +48,11 @@ def test_terra_one_file():
 
         files = next(os.walk(dest))[2]
         assert len(files) == 1
-        assert files[0] == "HG02450.final.cram.crai"
+        print("FIELS: ", files[0])
+        assert files[0] == "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.gVCF.\
+2019-02-06_Sample_NA11830_analysis_NA11830.haplotypeCalls.er.raw.g.vcf.gz.tbi"
         assert _verify_file(
-            Path(dest, files[0]), 1405458, "b2b6648d0b6e9f04508afda4fb815e3e"
+            Path(dest, files[0]), 4080487, "n1k2cGgCESLAAn1qlRUAwA=="
         )
 
 
@@ -71,9 +75,11 @@ def _verify_file(file: Path, expected_size: int, expected_md5: str) -> bool:
     if actual_size != expected_size:
         return False
 
-    md5_hash = hashlib.md5()
-    md5_hash.update(open(file, "rb").read())
-    actual_md5 = md5_hash.hexdigest()
+    # hashes in new test file are Base64(unhex(MD5($plaintext)))
+    # so you have to md5 hash, hex, and then b64 encode to compare to the testing file hashes
+    hash = bytes.fromhex(hashlib.md5(open(file, "rb").read()).hexdigest())
+    base64_encoded = base64.b64encode(hash).decode()
+    actual_md5 = base64_encoded
 
     if actual_md5 != expected_md5:
         return False
@@ -91,9 +97,11 @@ def test_terra(tmp_path, caplog):
     assert result.exit_code == 0
 
     files = sorted(os.listdir(tmp_path))
-    assert len(files) == 10
-    assert files[0] == "HG00536.final.cram.crai"
-    assert files[9] == "NA20525.final.cram.crai"
+    assert len(files) == 9
+    assert files[0] == "CCDG_13607_Project_CCDG_13607_B01_GRM_WGS.cram.\
+2019-02-06_Sample_HG00188_analysis_HG00188.final.cram.crai"
+    assert files[8] == "CCDG_14151_Project_CCDG_14151_B01_GRM_WGS.cram.\
+2020-02-12_Sample_NA12344_analysis_NA12344.final.cram.crai"
     assert f"Downloading to: {tmp_path}" in caplog.messages
 
     result = runner.invoke(
@@ -120,7 +128,7 @@ def test_terra_default_cwd():
     post_file_count = len(sorted(next(os.walk(os.getcwd()))[2]))
 
     assert result.exit_code == 0
-    assert (post_file_count - pre_file_count) == 10
+    assert (post_file_count - pre_file_count) == 9
 
 
 """
@@ -215,7 +223,7 @@ def test_optimizer_part_size_large_file():
             "tests/fixtures/mixed_file_sizes.tsv",
         ]
     )
-    time.sleep(5)
+    time.sleep(8)
     result.kill()
     with open(dir, "r") as fd:
         str_store = fd.readlines()
@@ -285,9 +293,7 @@ def test_terra_rename():
         _, _, files_after = next(os.walk(dest))
         file_count_after = len(files_after)
 
-        assert (file_count_after - file_count) == 10
-        # assert files[2] == "HG00536.final.cram.crai(1)"
-        # assert files[-1] == "NA20525.final.cram.crai(1)"
+        assert (file_count_after - file_count) == 9
 
 
 def test_terra_do_not_rename():
@@ -306,4 +312,4 @@ def test_terra_do_not_rename():
         _, _, files_after = next(os.walk(dest))
         file_count_after = len(files_after)
 
-        assert (file_count_after - file_count) == 0
+        assert (file_count_after - file_count) == 9

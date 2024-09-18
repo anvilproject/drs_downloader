@@ -1,7 +1,7 @@
 mkdocs==1.6.1
 pytest==8.3.3
 flake8
-pyinstaller
+pyinstaller @ git+https://github.com/ohsu-comp-bio/pyinstaller.git@feature/startup-message
 pytest-cov
 mkdocs-section-index
 mkdocs-literate-nav
