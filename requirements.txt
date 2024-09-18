@@ -1,6 +1,12 @@
-click==8.1.6
-aiohttp >=3.8.5 
+
+click>=8.1.7
+aiohttp>=3.10.5 
 tqdm
 aiofiles
 requests
 google-cloud-storage
+urllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
+aiohttp>=3.9.4 # not directly required, pinned by Snyk to avoid a vulnerability
+idna>=3.7 # not directly required, pinned by Snyk to avoid a vulnerability
+requests>=2.32.2 # not directly required, pinned by Snyk to avoid a vulnerability
+tqdm>=4.66.3 # not directly required, pinned by Snyk to avoid a vulnerability

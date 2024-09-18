@@ -186,7 +186,7 @@ The below command is a basic example of how to structure a download command with
 - a **download directory** called `DATA` as the destination
 
 ```sh
-$ drs_downloader terra -m tests/fixtures/manifest/terra-data.tsv -d DATA
+$ drs_downloader terra -m tests/fixtures/manifests/terra-data.tsv -d DATA
 100%|████████████████████████████████| 10/10 [00:00<00:00, 56148.65it/s]
 
 2022-11-21 16:56:49,595 ('HG03873.final.cram.crai', 'OK', 1351946, 1)
