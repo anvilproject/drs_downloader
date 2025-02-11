@@ -134,6 +134,15 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        env: 
+          APPLE_CERT_DATA: ${{ secrets.APPLE_CERT_DATA }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_NOTARY_USER: ${{ secrets.APPLE_NOTARY_USER }}
+          APPLE_NOTARY_PASSWORD: ${{ secrets.APPLE_NOTARY_PASSWORD }}
+          APPLE_TEAM_ID: ZA685R3CWP
+
       - name: Build executable
         shell: bash
         env: 
