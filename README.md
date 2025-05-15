@@ -126,17 +126,15 @@ Your browser has been opened to visit:
 
     https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=...
 
-
-
-You are now logged in as [rosalind@ohsu.edu].
-Your current project is [terra-314159].  You can change this setting by running:
+You are now logged in as [example@anvil.org].
+Your current project is [terra-example].  You can change this setting by running:
   $ gcloud config set project PROJECT_ID
 ```
 
 To change the billing project at any time you may use either the `$ gcloud config set project PROJECT_ID` command or the built-in `drs-downloader` command:
 
 ```sh
-$ drs_downloader terra --project-id Project ID>
+$ drs_downloader terra --project-id <Project ID>
 ```
 
 
