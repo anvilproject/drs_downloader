@@ -1,0 +1,1155 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+        <link rel="next" href="code-signing.html">
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.2">
+    
+    
+      
+        <title>AnVIL DRS Download Tool</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.30068a00.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#drs-downloader" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="AnVIL DRS Download Tool" class="md-header__button md-logo" aria-label="AnVIL DRS Download Tool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AnVIL DRS Download Tool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              DRS Downloader <!-- omit from toc -->
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="AnVIL DRS Download Tool" class="md-nav__button md-logo" aria-label="AnVIL DRS Download Tool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    AnVIL DRS Download Tool
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    DRS Downloader <!-- omit from toc -->
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="index.html" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    DRS Downloader <!-- omit from toc -->
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#about" class="md-nav__link">
+    About
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checksum-verification" class="md-nav__link">
+    Checksum Verification
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-executable" class="md-nav__link">
+    Running the Executable
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Executable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    Requirements
+  </a>
+  
+    <nav class="md-nav" aria-label="Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    Authentication
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifests" class="md-nav__link">
+    Manifests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick Start
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    Arguments
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basic-example" class="md-nav__link">
+    Basic Example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-with-a-different-header-value" class="md-nav__link">
+    Example with a Different Header Value
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helpadditional-options" class="md-nav__link">
+    Help/Additional Options
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#credits" class="md-nav__link">
+    Credits
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="code-signing.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Signing macOS Executables <!-- omit from toc -->
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="development.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="testing.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing Instructions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="reference/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    drs_downloader
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_5_1">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            drs_downloader
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cli
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="reference/clients/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    clients
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_5_1_2">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            clients
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/clients/gen3.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gen3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/clients/mock.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    mock
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/clients/terra.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    terra
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/manager.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/models.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/upgrader.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    upgrader
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#about" class="md-nav__link">
+    About
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    Table of Contents
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checksum-verification" class="md-nav__link">
+    Checksum Verification
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-executable" class="md-nav__link">
+    Running the Executable
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Executable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    Requirements
+  </a>
+  
+    <nav class="md-nav" aria-label="Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    Authentication
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifests" class="md-nav__link">
+    Manifests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick Start
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    Arguments
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basic-example" class="md-nav__link">
+    Basic Example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-with-a-different-header-value" class="md-nav__link">
+    Example with a Different Header Value
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helpadditional-options" class="md-nav__link">
+    Help/Additional Options
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#credits" class="md-nav__link">
+    Credits
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="drs-downloader">DRS Downloader <!-- omit from toc --></h1>
+<p><a href="https://github.com/anvilproject/drs_downloader/actions/workflows/build.yml"><img alt="DRS Downloader" src="https://github.com/anvilproject/drs_downloader/actions/workflows/build.yml/badge.svg" /></a></p>
+<h2 id="about">About</h2>
+<p>A file download tool for AnVIL/TDR data identified by Data Repository Service URIs (<a href="https://support.terra.bio/hc/en-us/articles/360039330211-Overview-Interoperable-data-GA4GH-DRS-URIs">DRS URIs</a>).</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#about">About</a></li>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#checksum-verification">Checksum Verification</a></li>
+<li><a href="#running-the-executable">Running the Executable</a></li>
+<li><a href="#requirements">Requirements</a><ul>
+<li><a href="#authentication">Authentication</a></li>
+</ul>
+</li>
+<li><a href="#usage">Usage</a></li>
+<li><a href="#manifests">Manifests</a></li>
+<li><a href="#quick-start">Quick Start</a><ul>
+<li><a href="#arguments">Arguments</a></li>
+</ul>
+</li>
+<li><a href="#basic-example">Basic Example</a></li>
+<li><a href="#example-with-a-different-header-value">Example with a Different Header Value</a></li>
+<li><a href="#helpadditional-options">Help/Additional Options</a></li>
+<li><a href="#credits">Credits</a></li>
+</ul>
+<h2 id="installation">Installation</h2>
+<table>
+<thead>
+<tr>
+<th>Operating System</th>
+<th>DRS Downloader</th>
+<th>Checksum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS</td>
+<td><a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/drs_downloader.pkg">drs_downloader.pkg</a></td>
+<td><a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt">checksums.txt</a></td>
+</tr>
+<tr>
+<td>Linux</td>
+<td><a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/drs_downloader">drs_downloader</a></td>
+<td><a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt">checksums.txt</a></td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/drs_downloader.exe">drs_downloader.exe</a></td>
+<td><a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt">checksums.txt</a></td>
+</tr>
+</tbody>
+</table>
+<p>Download the latest <code>drs_downloader</code> zip file for your operating system. Unzipping the downloaded file will provide a <code>drs_downloader</code> executable file that can be run directly.</p>
+<details>
+<summary>Supported OS Versions</summary>
+
+| Operating System | Supported Versions             |
+| ---------------- | ------------------------------ |
+| macOS            | 12 (Monterey), 13 (Ventura)    |
+| Linux            | Ubuntu 22.04 (Jammy Jellyfish) |
+| Windows          | Windows 11                     |
+
+_Notes_:
+
+- Testing was done on hardware running macOS Monterey and Ventura (Apple Silicon M1 chips), with Windows and Linux emulation through [UTM](https://mac.getutm.app/).
+- Due to hardware limitations with the ARM M1 chips, Windows 10 was not included in the list of tested operated systems as Microsoft does not currently provide a public Windows 10 ARM build.
+- Ubuntu 20.04 (Focal Fossa) uses version 2.31 of the GNU C Library which appears to be incompatible with Python 3.10 requirement of version 2.35.
+
+</details>
+
+<h3 id="checksum-verification">Checksum Verification</h3>
+<p>In order to verify that the downloaded file can be trusted checksums are provided in <a href="https://github.com/anvilproject/drs_downloader/releases/latest/download/checksums.txt"><code>checksums.txt</code></a>. See below for examples of how to use this file.</p>
+<details>
+<summary>Successful Verification</summary>
+
+To verify the integrity of the binaries on macOS run the following command in the same directory as the downloaded file:
+
+
+<pre><code class="language-sh">$ shasum -c checksums.txt --ignore-missing
+drs_downloader.pkg: OK
+</code></pre>
+
+
+If the `shasum` command outputs `OK` than the verification was successful and the executable can be trusted.
+
+</details>
+
+<details>
+<summary>Unsuccessful Verification</summary>
+
+Alternatively if the commad outputs `FAILED` than the checksum did not match and the binary should not be run.
+
+
+<pre><code class="language-sh">$ shasum -c checksums.txt --ignore-missing
+drs_downloader.pkg: FAILED
+shasum: WARNING: 1 computed checksum did NOT match
+shasum: checksums.txt: no file was verified
+</code></pre>
+
+
+In such a case please reach out to the contributors for assistance.
+
+</details>
+
+<h2 id="running-the-executable">Running the Executable</h2>
+<p><strong>For Linux</strong> to run the exe you will have to grant the file higher permissions. you can do this by running:</p>
+<pre><code class="language-sh">chmod +x [filename]
+</code></pre>
+<p><strong>For Mac</strong>, the binary is installed in <code>/Applications</code> by default. To run <code>drs_downloader</code> rather than <code>/Applications/drs_downloader</code> every time, move the binary to an existing directory in the <code>PATH</code> variable, eg:</p>
+<pre><code class="language-sh">sudo mv /Applications/drs_downloader /usr/local/bin/
+</code></pre>
+<p>Alternatively, you can add your current directory to the PATH variable so the binary is globally executable.</p>
+<h3 id="requirements">Requirements</h3>
+<p>The downloader requires that a Google Cloud project be designated as the billing project. In order for the downloader to authenticate and set the desired billing project the gcloud CLI tool must first be installed:</p>
+<ul>
+<li><a href="https://cloud.google.com/sdk/docs/install">gcloud CLI</a> — used to authenticate the downloader and set the billing project.</li>
+<li><a href="https://www.python.org/">Python</a> (&gt;= 3.10) — required for gcloud CLI functionality.</li>
+</ul>
+<h4 id="authentication">Authentication</h4>
+<p>Upon running the following <code>gcloud</code> command a browser window will open in which you may choose the Google account used for the billing project:</p>
+<pre><code class="language-sh">$ gcloud auth application-default login
+Your browser has been opened to visit:
+
+    https://accounts.google.com/o/oauth2/auth?response_type=code&amp;client_id=...
+
+You are now logged in as [example@anvil.org].
+Your current project is [terra-example].  You can change this setting by running:
+  $ gcloud config set project PROJECT_ID
+</code></pre>
+<p>To change the billing project at any time you may use either the <code>$ gcloud config set project PROJECT_ID</code> command or the built-in <code>drs-downloader</code> command:</p>
+<pre><code class="language-sh">$ drs_downloader terra --project-id &lt;Project ID&gt;
+</code></pre>
+<h2 id="usage">Usage</h2>
+<h3 id="manifests">Manifests</h3>
+<p>A manifest is a tsv file where at least one column contains a set of drs IDs, such as this <a href="tests/fixtures/gen3-small.tsv">minimal manifest file</a>. These manifests can either be created by hand or downloaded from the <a href="https://explore.anvilproject.org/files">AnVIL Data Explorer</a> or a Terra workspace data page.</p>
+<p>More on <a href="https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.4.0/docs/#tag/Working-With-Compound-Objects/Compound-Objects">manifests</a> according to DRS can be found here.</p>
+<h3 id="quick-start">Quick Start</h3>
+<pre><code class="language-sh">$ drs_downloader terra -m &lt;manifest file&gt; -d &lt;destination directory&gt;
+</code></pre>
+<h4 id="arguments">Arguments</h4>
+<p><code>-s, --silent</code></p>
+<blockquote>
+<p>Disables all output to the terminal during and after downloading.</p>
+</blockquote>
+<p><code>-d, --destination_dir TEXT</code></p>
+<blockquote>
+<p>The directory or folder to download the DRS Objects to. Defaults to <code>/tmp/testing</code> if no value is provided.</p>
+</blockquote>
+<p><code>-m, --manifest_path TEXT</code></p>
+<blockquote>
+<p>The manifest file that contains the DRS Objects to be downloaded. Typically a TSV file with one row per DRS Object.</p>
+</blockquote>
+<p><code>--drs-column-name TEXT</code></p>
+<blockquote>
+<p>The value of the column in the manifest file containing the DRS Object IDs. Defaults to <code>pfb:ga4gh_drs_uri</code> if no value is provided.</p>
+</blockquote>
+<p><code>--duplicate</code></p>
+<blockquote>
+<p>downloads files and saves them into the specified directory even if there is already files with the same name already in the directory. Numbered naming is used
+to specify the order of duplicates downloaded to the directory. For example: 1st -&gt; original_file 2nd -&gt; original_file(1) 3rd-&gt; original_file(2) ...</p>
+</blockquote>
+<h3 id="basic-example">Basic Example</h3>
+<p>The below command is a basic example of how to structure a download command with all of the required arguments. It uses:</p>
+<ul>
+<li>a <strong>manifest file</strong> called <a href="tests/fixtures/terra-data.tsv"><code>terra-data.tsv</code></a> with 10 DRS Objects.</li>
+<li>a <strong>DRS column ID value</strong> of <code>pfb:ga4gh_drs_uri</code> within the manifest file to reference the DRS objects. It can be omitted since this is the default value used by the downloader.</li>
+<li>a <strong>download directory</strong> called <code>DATA</code> as the destination</li>
+</ul>
+<pre><code class="language-sh">$ drs_downloader terra -m tests/fixtures/manifests/terra-data.tsv -d DATA
+100%|████████████████████████████████| 10/10 [00:00&lt;00:00, 56148.65it/s]
+
+2022-11-21 16:56:49,595 ('HG03873.final.cram.crai', 'OK', 1351946, 1)
+2022-11-21 16:56:49,595 ('HG04209.final.cram.crai', 'OK', 1338980, 1)
+2022-11-21 16:56:49,595 ('HG02142.final.cram.crai', 'OK', 1405543, 1)
+2022-11-21 16:56:49,595 ('HG01552.final.cram.crai', 'OK', 1296198, 1)
+2022-11-21 16:56:49,595 ('NA18613.final.cram.crai', 'OK', 1370106, 1)
+2022-11-21 16:56:49,595 ('HG00536.final.cram.crai', 'OK', 1244278, 1)
+2022-11-21 16:56:49,595 ('HG02450.final.cram.crai', 'OK', 1405458, 1)
+2022-11-21 16:56:49,595 ('NA20525.final.cram.crai', 'OK', 1337382, 1)
+2022-11-21 16:56:49,595 ('NA20356.final.cram.crai', 'OK', 1368064, 1)
+2022-11-21 16:56:49,595 ('HG00622.final.cram.crai', 'OK', 1254920, 1)
+2022-11-21 16:56:49,595 ('done', 'statistics.max_files_open', 37)
+</code></pre>
+<p>After the download completes we can look in the <code>DATA</code> directory to confirm that all 10 DRS Objects have been downloaded:</p>
+<pre><code class="language-sh">$ ls ./DATA
+HG00536.final.cram.crai HG01552.final.cram.crai
+HG02450.final.cram.crai HG04209.final.cram.crai
+NA20356.final.cram.crai HG00622.final.cram.crai
+HG02142.final.cram.crai HG03873.final.cram.crai
+NA18613.final.cram.crai NA20525.final.cram.crai
+</code></pre>
+<h3 id="example-with-a-different-header-value">Example with a Different Header Value</h3>
+<p>Let's take a look at different manifest file called <a href="https://github.com/anvilproject/drs_downloader/blob/feature/download-recovery/tests/fixtures/manifests/terra-different-header.tsv"><code>terra-different-header.tsv</code></a>. Namely the DRS header value is now <code>drs_uri</code> so we will need to tell the downloader which column to find the DRS URI's in the manifest with the <code>--drs-column-name</code> flag:</p>
+<pre><code class="language-sh">drs_downloader terra -m tests/fixtures/manifests/terra-different-header.tsv -d DATA --drs-column-name drs_uri
+</code></pre>
+<p>This will download the DRS Objects specified in the <code>drs_uri</code> column into the <code>DATA</code> directory just as before.</p>
+<h3 id="helpadditional-options">Help/Additional Options</h3>
+<p>To see all available flags run the <code>help</code> command:</p>
+<pre><code class="language-sh">$ drs_downloader terra --help
+
+Usage: drs_download terra [OPTIONS]
+
+  Copy files from terra.bio
+
+Options:
+  -s, --silent                Display nothing.
+  -d, --destination_dir TEXT  Destination directory.  [default: /tmp/testing]
+  -m, --manifest_path TEXT    Path to manifest tsv.
+  --duplicate                 allow duplicate downloads with same file name
+  --drs-column-name TEXT           The column header in the TSV file associated
+                              with the DRS URIs.Example: pfb:ga4gh_drs_uri
+  --help                      Show this message and exit.
+</code></pre>
+<h2 id="credits">Credits</h2>
+<p>This project is developed in partnership between The AnVIL Project, the Broad Institute, and the Ellrott Lab at Oregon Health &amp; Science University. Development is lead by <a href="https://github.com/bwalsh">Brian Walsh</a> with contributions from <a href="https://github.com/matthewpeterkort">Matthew Peterkort</a> and <a href="https://github.com/lbeckman314">Liam Beckman</a>. Special thanks to <a href="https://github.com/mikebaumann">Michael Baumann</a> at the Broad Institute for guidance and development recommendations.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.dfff1995.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.dff1b7c8.min.js"></script>
+      
+    
+  </body>
+</html>

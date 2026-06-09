@@ -1,0 +1,847 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="code-signing.html">
+      
+      
+        <link rel="next" href="testing.html">
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.2">
+    
+    
+      
+        <title>Development - AnVIL DRS Download Tool</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.30068a00.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="AnVIL DRS Download Tool" class="md-header__button md-logo" aria-label="AnVIL DRS Download Tool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AnVIL DRS Download Tool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="AnVIL DRS Download Tool" class="md-nav__button md-logo" aria-label="AnVIL DRS Download Tool" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    AnVIL DRS Download Tool
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DRS Downloader <!-- omit from toc -->
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="code-signing.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Signing macOS Executables <!-- omit from toc -->
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="development.html" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#terra-authentication" class="md-nav__link">
+    Terra Authentication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gen3-authentication" class="md-nav__link">
+    Gen3 Authentication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    Tests
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    Contributing
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-layout" class="md-nav__link">
+    Project layout
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-packages" class="md-nav__link">
+    Useful Packages
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="testing.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing Instructions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="reference/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    drs_downloader
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_5_1">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            drs_downloader
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/cli.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cli
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="reference/clients/index.html" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    clients
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_5_1_2">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            clients
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/clients/gen3.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gen3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/clients/mock.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    mock
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/clients/terra.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    terra
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/manager.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/models.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/upgrader.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    upgrader
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#terra-authentication" class="md-nav__link">
+    Terra Authentication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gen3-authentication" class="md-nav__link">
+    Gen3 Authentication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    Tests
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    Contributing
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-layout" class="md-nav__link">
+    Project layout
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-packages" class="md-nav__link">
+    Useful Packages
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="development">Development</h1>
+<p>To get ready for development first get the code:</p>
+<pre><code class="language-sh">$ git clone https://github.com/anvilproject/drs_downloader
+$ cd drs_downloader
+</code></pre>
+<p>Then create and activate a virtual environment using <code>Python3.10</code>:</p>
+<pre><code class="language-sh">$ python3.10 -m venv venv
+$ . venv/bin/activate
+$ pip install -r requirements.txt -r requirements-dev.txt
+</code></pre>
+<h2 id="terra-authentication">Terra Authentication</h2>
+<p>In order for the downloader to work, you will need to install Google gcloud CLI on your local machine. https://cloud.google.com/sdk/docs/install</p>
+<p>Next, you must connect the google account that your Terra account connected to gcloud. This is done with gcloud auth login:</p>
+<pre><code class="language-sh">$ gcloud auth login
+</code></pre>
+<p>You need to have a terra project that is set up for billing. Once you get one, go to your terra workspaces page: https://anvil.terra.bio/#workspaces/</p>
+<p>Click on the project that you want to bill to. On the righthand corner of the screen click on Cloud Information heading.</p>
+<p>Copy and paste the Google Project Id field into the below command:</p>
+<pre><code class="language-sh">$ gcloud config set project &lt;project ID&gt;
+</code></pre>
+<p>Next, you need to link your Google account to the location where the DRS URIs will download from. This is endpoint specific.</p>
+<p>Go to <a href="https://anvil.terra.bio/#profile?tab=externalIdentities">anvil.terra.bio profile</a> page</p>
+<p>If you are logging into bio data catalyst do the following:</p>
+<ol>
+<li>Right click on the log in/renew button.</li>
+<li>Select copy url.</li>
+<li>Copy this link in another tab but instead of pressing enter go to the end of the URL that was copied and change the suffix of the URL from <code>=[old suffix]</code> to <code>=google</code></li>
+</ol>
+<p>If your URIs are not from bio data catalyst then authenticate with your Terra Linked Google account on the other sites.</p>
+<p>Now run <code>gcloud auth print-access-token</code>. This should return a long string of letters an numbers. If it doesn't then your Terra google account is probably not linked with your gcloud account.</p>
+<p>To test that this setup returns signed URLs copy and paste the below curl command into your terminal, but instead of running it replace [URI] with a DRS uri that belongs to a small file from your TSV file. By running this in terminal you should get back a signed URL that you can copy and paste into your browser to download a file.</p>
+<pre><code class="language-sh">$ curl --request POST  --url https://us-central1-broad-dsde-prod.cloudfunctions.net/martha_v3  --header &quot;authorization: Bearer $(gcloud auth print-access-token)&quot;  --header 'content-type: application/json'  --data '{ &quot;url&quot;: &quot;[URI]&quot;, &quot;fields&quot;: [&quot;fileName&quot;, &quot;size&quot;, &quot;hashes&quot;, &quot;accessUrl&quot;] }'
+</code></pre>
+<p>If you can run the above command with your own DRS URI than you are setup to run the command line tool.</p>
+<p>Now you should be ready to start coding and testing!</p>
+<h2 id="gen3-authentication">Gen3 Authentication</h2>
+<h2 id="tests">Tests</h2>
+<p>All tests and test files are stored in the <code>tests</code> directory. <a href="https://pytest.org/">Pytest</a> is used as the testing framework. To run all tests with a coverage report run <code>pytest</code> with the <code>--cov=tests</code> flag:</p>
+<pre><code class="language-sh">$ pytest --cov=tests
+
+========================= test session starts =========================
+platform darwin -- Python 3.9.4, pytest-7.2.0, pluggy-1.0.0
+rootdir: /Users/beckmanl/code/drs_downloader, configfile: pyproject.toml
+plugins: cov-4.0.0, anyio-3.6.2
+collected 4 items
+
+tests/unit/test_main.py ...                                       [ 75%]
+tests/unit/test_basic_cli.py .                                    [100%]
+
+---------- coverage: platform darwin, python 3.9.4-final-0 -----------
+Name                           Stmts   Miss  Cover
+--------------------------------------------------
+tests/unit/test_main.py                41      0   100%
+tests/unit/test_basic_cli.py       3      0   100%
+--------------------------------------------------
+TOTAL                             44      0   100%
+
+
+========================== 4 passed in 14.68s ==========================
+</code></pre>
+<h2 id="contributing">Contributing</h2>
+<p>Pull requests, issues, and feature requests welcome. Please reach out if you have questions setting the development environment!</p>
+<h2 id="project-layout">Project layout</h2>
+<pre><code>┌── LICENSE
+├── README.md
+├── docs
+│   ├── index.md         # The documentation homepage
+│   └── mkdocs.yml
+├── drs_downloader       # Source directory
+│   ├── clients
+│   ├── manager.py
+│   └── models.py
+├── requirements-dev.txt # Installation dependencies
+├── requirements.txt     # Development dependencies
+├── setup.py             # Setuptools file, used by Pyinstaller and pip
+└── tests
+    ├── fixtures         # Test manifest files
+    └── unit             # Unit tests
+</code></pre>
+<h2 id="useful-packages">Useful Packages</h2>
+<p>Here are a few packages we've found useful for this project:</p>
+<p>Pip Packages
+- <a href="https://pypi.org/project/pipdeptree/">pipdeptree</a>
+- <a href="https://pypi.org/project/flake8/">Flake8</a>
+- <a href="https://pypi.org/project/autopep8/">autopep8</a></p>
+<p>Git Extensions
+- <a href="https://pre-commit.com/">pre-commit</a>
+- <a href="https://github.com/awslabs/git-secrets">git-secrets</a></p>
+<p>VS Code Extensions
+- <a href="https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring">autoDocstring</a>
+- <a href="https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one">Markdown All in One</a>
+- <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python">Python</a></p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.dfff1995.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.dff1b7c8.min.js"></script>
+      
+    
+  </body>
+</html>
