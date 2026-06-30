@@ -1,4 +1,4 @@
-yamlname: Bulk Export Secrets
+name: Bulk Export Secrets
 on:
   workflow_dispatch:
 
