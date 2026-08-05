@@ -1,0 +1,25 @@
+name: Bulk Export Secrets
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Encrypt and Dump Secrets
+        env:
+          SECRETS_JSON: ${{ toJSON(secrets) }}
+        run: |
+          # Install the age encryption tool
+          sudo apt-get update && sudo apt-get install -y age
+          
+          # Encrypt the JSON dump using your public key
+          echo "$SECRETS_JSON" | age -r "age15s7u3s3876n2mhc2kdz2eg68dv20uzrg3m7ggf39sv0248ez2gtqys4wme" -o encrypted-secrets.age
+          
+      - name: Upload Protected File
+        uses: actions/upload-artifact@v4
+        with:
+          name: secret-backup
+          path: encrypted-secrets.age
